@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control de Dispositivos - Colectivos</title>
+    <!-- Librería OCR para leer texto de las imágenes automáticamente -->
+    <script src="https://jsdelivr.net"></script>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 0 15px; background: #f4f7f6; color: #333; }
+        body { font-family: Arial, sans-serif; max-width: 650px; margin: 20px auto; padding: 0 15px; background: #f4f7f6; color: #333; }
         h1, h2, h3 { text-align: center; color: #0056b3; }
         .section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
         label { display: block; margin: 10px 0 5px; font-weight: bold; }
@@ -21,9 +23,9 @@
         li { background: #eee; margin: 5px 0; padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; font-size: 14px; align-items: center; }
         
         .foto-container { text-align: center; margin-top: 10px; background: #fafafa; padding: 10px; border: 1px dashed #bbb; border-radius: 4px; }
-        .foto-visualizador { max-width: 100%; max-height: 250px; border-radius: 4px; display: inline-block; }
+        .grid-fotos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .foto-visualizador { max-width: 100%; max-height: 200px; border-radius: 4px; display: block; margin: 0 auto; object-fit: cover; }
         
-        /* BOTONES DEL MENÚ PRINCIPAL */
         .linea-btn { margin-bottom: 12px; font-size: 18px; padding: 15px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
         .verde-claro { background: #4cbd5c !important; }
         .verde-claro:hover { background: #3fa34f !important; }
@@ -37,6 +39,7 @@
         .btn-volver { background: #6c757d; font-size: 14px; padding: 8px; width: auto; display: inline-block; margin-bottom: 15px; }
         .btn-volver:hover { background: #5a6268; }
         .lbl-linea-activa { font-size: 16px; background: #e9ecef; padding: 8px; border-radius: 4px; display: inline-block; font-weight: bold; margin-bottom: 15px; color: #495057; border-left: 5px solid #007bff; }
+        .loading-ocr { font-size: 13px; color: #d39e00; font-weight: bold; margin-bottom: 10px; text-align: center; }
 
         #reporte-impresion { display: none; }
         @media print {
@@ -44,11 +47,12 @@
             .section, h1, .btn-volver, .lbl-linea-activa { display: none !important; } 
             #reporte-impresion { display: block !important; } 
             .print-section { page-break-inside: avoid; margin-bottom: 30px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-            th, td { border: 1px solid #333; padding: 8px; text-align: left; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; table-layout: fixed; }
+            th, td { border: 1px solid #333; padding: 6px; text-align: left; word-wrap: break-word; vertical-align: top; }
             th { background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .badge-no { color: red; font-weight: bold; }
-            .print-thumb { max-width: 80px; max-height: 60px; border-radius: 4px; }
+            .print-thumb { max-width: 90px; max-height: 65px; border-radius: 4px; display: block; margin: 2px auto; }
+            .print-flex-thumbs { display: flex; gap: 5px; justify-content: center; }
         }
     </style>
 </head>
@@ -56,7 +60,7 @@
 
     <h1>Control de Dispositivos</h1>
 
-    <!-- PANTALLA INICIAL: MENÚ DE SELECCIÓN DE LÍNEAS -->
+    <!-- MENÚ PRINCIPAL -->
     <div id="pantalla-menu" class="section">
         <h2>Seleccione la Línea de Colectivo</h2>
         <p style="font-size:14px; color:#666; text-align:center; margin-bottom:20px;">Los internos se descargarán automáticamente desde la subcarpeta /parque.</p>
@@ -74,13 +78,13 @@
         <button class="linea-btn verde-oscuro" onclick="seleccionarLinea('Varela')">Línea Varela</button>
     </div>
 
-    <!-- PANTALLA SECUNDARIA: GESTIÓN DE LA LÍNEA SELECCIONADA -->
+    <!-- PANEL DE TRABAJO -->
     <div id="pantalla-gestion" class="hidden">
         
         <button class="btn-volver" onclick="volverAlMenu()">← Cambiar de Línea</button>
         <div><span id="linea-activa-txt" class="lbl-linea-activa">Línea: Ninguna</span></div>
 
-        <!-- 1. FORMULARIO DE CHEQUEO -->
+        <!-- REGISTRAR DATOS -->
         <div class="section">
             <h2>1. Registrar Chequeo</h2>
             <label for="select-interno">Número de Interno:</label>
@@ -96,8 +100,16 @@
             </select>
 
             <div id="campos-si" class="hidden">
-                <label for="input-foto">Subir Foto del Colectivo:</label>
-                <input type="file" id="input-foto" accept="image/*">
+                <label for="input-foto4">1. Foto de las 4 Pantallas:</label>
+                <input type="file" id="input-foto4" accept="image/*">
+
+                <label for="input-fotoMenu">2. Foto del Menú Interno (Lector Serial):</label>
+                <input type="file" id="input-fotoMenu" accept="image/*" onchange="procesarFotoSerial(this)">
+                
+                <div id="status-ocr" class="loading-ocr hidden">⏳ Analizando imagen... Extrayendo número serial...</div>
+
+                <label for="txt-serial">Número Serial Detectado:</label>
+                <input type="text" id="txt-serial" placeholder="El número se extraerá solo o puede escribirlo...">
             </div>
 
             <div id="campos-no" class="hidden">
@@ -106,22 +118,33 @@
             </div>
             <button onclick="guardarChequeo()" style="margin-top:15px;">Guardar Chequeo</button>
         </div>
-
-        <!-- 2. VISOR DE FOTOS -->
+        <!-- VISOR DE MULTIMEDIA -->
         <div class="section">
-            <h2>2. Consultar Foto de Interno</h2>
-            <label for="select-visor">Seleccione Interno para ver/descargar foto:</label>
-            <select id="select-visor" onchange="visualizarFotoParticular()">
+            <h2>2. Consultar Fotos e Info de Interno</h2>
+            <label for="select-visor">Seleccione Interno para consultar:</label>
+            <select id="select-visor" onchange="visualizarFotosParticular()">
                 <option value="">-- Seleccione un interno --</option>
             </select>
+            
             <div id="visor-contenedor" class="foto-container hidden">
-                <img id="visor-img" src="" class="foto-visualizador" alt="Foto del interno">
-                <button id="btn-descargar-foto" class="btn-download" onclick="descargarFotoParticular()">Descargar esta Foto</button>
+                <p style="text-align:left; margin:5px 0;"><b>N° Serial:</b> <span id="visor-serial-txt">-</span></p>
+                <div class="grid-fotos">
+                    <div>
+                        <span style="font-size:12px; font-weight:bold;">Foto 4 Pantallas</span>
+                        <img id="visor-img4" src="" class="foto-visualizador" alt="4 Pantallas">
+                        <button id="btn-down-4" class="btn-download" onclick="descargarFoto('4')">Descargar</button>
+                    </div>
+                    <div>
+                        <span style="font-size:12px; font-weight:bold;">Foto Menú Interno</span>
+                        <img id="visor-imgMenu" src="" class="foto-visualizador" alt="Menú Interno">
+                        <button id="btn-down-menu" class="btn-download" onclick="descargarFoto('menu')">Descargar</button>
+                    </div>
+                </div>
             </div>
-            <p id="visor-vacio" style="font-size: 13px; color: #666; text-align: center; margin-top: 5px;">Este interno no posee fotos registradas.</p>
+            <p id="visor-vacio" style="font-size: 13px; color: #666; text-align: center; margin-top: 5px;">Este interno no posee registros multimedia.</p>
         </div>
 
-        <!-- 3. ALERTAS -->
+        <!-- REPORTES -->
         <div class="section">
             <h2>3. Alertas y Exportación</h2>
             <h3>Próximos a chequear (Más antiguos o sin revisar)</h3>
@@ -130,7 +153,7 @@
         </div>
     </div>
 
-    <!-- TABLAS EXCLUSIVAS DEL PDF -->
+    <!-- DOCUMENTO DE IMPRESIÓN (PDF) -->
     <div id="reporte-impresion">
         <h2 id="print-titulo" style="text-align: center; color: #000; margin-bottom: 5px;">Reporte General de Control de Flota</h2>
         <p id="fecha-reporte" style="text-align: center; font-size: 12px; color: #555; margin-bottom: 25px;"></p>
@@ -139,7 +162,12 @@
             <h3 style="color: green; border-bottom: 2px solid green; padding-bottom: 3px;">Dispositivos que SÍ Funcionan</h3>
             <table>
                 <thead>
-                    <tr><th style="width: 20%;">Interno</th><th style="width: 30%;">Último Control</th><th style="width: 50%;">Foto Evidencia</th></tr>
+                    <tr>
+                        <th style="width: 15%;">Interno</th>
+                        <th style="width: 20%;">Último Control</th>
+                        <th style="width: 20%;">N° Serial</th>
+                        <th style="width: 45%;">Evidencias Fotográficas (4 Pantallas / Menú)</th>
+                    </tr>
                 </thead>
                 <tbody id="tabla-si-cuerpo"></tbody>
             </table>
@@ -149,7 +177,11 @@
             <h3 style="color: red; border-bottom: 2px solid red; padding-bottom: 3px;">Dispositivos que NO Funcionan</h3>
             <table>
                 <thead>
-                    <tr><th style="width: 20%;">Interno</th><th style="width: 30%;">Último Control</th><th style="width: 50%;">Motivo de la Falla</th></tr>
+                    <tr>
+                        <th style="width: 15%;">Interno</th>
+                        <th style="width: 25%;">Último Control</th>
+                        <th style="width: 60%;">Motivo de la Falla</th>
+                    </tr>
                 </thead>
                 <tbody id="tabla-no-cuerpo"></tbody>
             </table>
@@ -159,42 +191,54 @@
         let lineaActiva = "";
         let bd = {};
 
-        // Función asíncrona para leer el archivo remoto desde el servidor GitHub
         async function seleccionarLinea(nombreLinea) {
             lineaActiva = nombreLinea;
-            
-            // Cargar los registros locales guardados en este navegador para la línea
             bd = JSON.parse(localStorage.getItem('parque_bd_' + lineaActiva)) || {};
 
             try {
-                // Descarga automática del archivo .txt desde el servidor remoto
                 const respuesta = await fetch(`parque/${lineaActiva}.txt`);
-                
                 if (respuesta.ok) {
                     const texto = await respuesta.text();
                     const internosArchivo = texto.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-                    
-                    // Sincronizar el archivo con la memoria, sin borrar chequeos previos
                     internosArchivo.forEach(interno => {
                         if (!bd[interno]) {
-                            bd[interno] = { estado: 'Sin chequear', fecha: '', motivo: '', foto: '' };
+                            bd[interno] = { estado: 'Sin chequear', fecha: '', motivo: '', foto4: '', fotoMenu: '', serial: '' };
                         }
                     });
                     guardarEnStorage();
-                } else {
-                    console.warn(`No se encontró el archivo automático parque/${lineaActiva}.txt. Se usarán datos locales.`);
                 }
-            } catch (error) {
-                console.error("Error al conectar con el parque automático:", error);
-            }
+            } catch (error) { console.error("Error al sincronizar el parque:", error); }
 
-            // Cambiar de pantalla y renderizar datos
             document.getElementById('linea-activa-txt').textContent = "Línea activa: " + lineaActiva;
             document.getElementById('pantalla-menu').classList.add('hidden');
             document.getElementById('pantalla-gestion').classList.remove('hidden');
             
             actualizarSelects();
             calcularAntiguos();
+        }
+
+        // FUNCIÓN OCR: Escanea la foto en busca de texto
+        function procesarFotoSerial(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const statusTxt = document.getElementById('status-ocr');
+            statusTxt.classList.remove('hidden');
+
+            const lector = new FileReader();
+            lector.onload = function(e) {
+                Tesseract.recognize(e.target.result, 'eng+spa')
+                    .then(({ data: { text } }) => {
+                        const coincidencias = text.match(/[A-Z0-9]{5,20}/g);
+                        if (coincidencias && coincidencias.length > 0) {
+                            const mejorCoincidencia = coincidencias.reduce((a, b) => a.length > b.length ? a : b);
+                            document.getElementById('txt-serial').value = mejorCoincidencia;
+                        }
+                    })
+                    .catch(err => console.error("Error en lectura OCR:", err))
+                    .finally(() => statusTxt.classList.add('hidden'));
+            };
+            lector.readAsDataURL(file);
         }
 
         function volverAlMenu() {
@@ -215,9 +259,8 @@
                 const optForm = document.createElement('option'); optForm.value = interno; optForm.textContent = `Interno ${interno} (${bd[interno].estado})`; selectForm.appendChild(optForm);
                 const optVisor = document.createElement('option'); optVisor.value = interno; optVisor.textContent = `Interno ${interno}`; selectVisor.appendChild(optVisor);
             });
-            selectForm.value = bd[valorFormAntes] ? valorFormAntes : ''; selectVisor.value = bd[valorVisorAntes] ? valorVisorAntes : ''; visualizarFotoParticular();
+            selectForm.value = bd[valorFormAntes] ? valorFormAntes : ''; selectVisor.value = bd[valorVisorAntes] ? valorVisorAntes : ''; visualizarFotosParticular();
         }
-
         function alternarCampos() {
             const estado = document.getElementById('select-estado').value;
             document.getElementById('campos-si').classList.toggle('hidden', estado !== 'SI');
@@ -231,21 +274,34 @@
             const ahora = new Date(); const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
 
             if (estado === 'SI') {
-                const fotoFile = document.getElementById('input-foto').files;
-                if (fotoFile) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) { bd[interno] = { estado: 'SI', fecha: fechaString, motivo: '', foto: e.target.result }; finalizarGuardado(); };
-                    reader.readAsDataURL(fotoFile);
-                } else { bd[interno] = { estado: 'SI', fecha: fechaString, motivo: '', foto: bd[interno].foto || '' }; finalizarGuardado(); }
+                const file4 = document.getElementById('input-foto4').files[0];
+                const fileMenu = document.getElementById('input-fotoMenu').files[0];
+                const serialVal = document.getElementById('txt-serial').value.trim();
+
+                const registrosTemp = { estado: 'SI', fecha: fechaString, motivo: '', serial: serialVal, foto4: bd[interno].foto4 || '', fotoMenu: bd[interno].fotoMenu || '' };
+
+                const procesarGuardadoFinal = () => {
+                    bd[interno] = registrosTemp; guardarEnStorage(); calcularAntiguos(); actualizarSelects();
+                    document.getElementById('select-interno').value = ''; document.getElementById('select-estado').value = ''; document.getElementById('txt-serial').value = '';
+                    document.getElementById('input-foto4').value = ''; document.getElementById('input-fotoMenu').value = ''; alternarCampos();
+                    alert('Chequeo guardado exitosamente.');
+                };
+
+                const promesas = [];
+                if (file4) {
+                    promesas.push(new Promise(res => { const r = new FileReader(); r.onload = (e) => { registrosTemp.foto4 = e.target.result; res(); }; r.readAsDataURL(file4); }));
+                }
+                if (fileMenu) {
+                    promesas.push(new Promise(res => { const r = new FileReader(); r.onload = (e) => { registrosTemp.fotoMenu = e.target.result; res(); }; r.readAsDataURL(fileMenu); }));
+                }
+
+                if (promesas.length > 0) { Promise.all(promesas).then(procesarGuardadoFinal); } else { procesarGuardadoFinal(); }
             } else {
                 const motivo = document.getElementById('txt-motivo').value; if (!motivo.trim()) return alert('Por favor, ingrese el motivo.');
-                bd[interno] = { estado: 'NO', fecha: fechaString, motivo: motivo, foto: '' }; finalizarGuardado();
+                bd[interno] = { estado: 'NO', fecha: fechaString, motivo: motivo, serial: '', foto4: '', fotoMenu: '' };
+                document.getElementById('select-interno').value = ''; document.getElementById('select-estado').value = ''; document.getElementById('txt-motivo').value = ''; alternarCampos();
+                guardarEnStorage(); calcularAntiguos(); actualizarSelects(); alert('Chequeo guardado.');
             }
-        }
-
-        function finalizarGuardado() {
-            guardarEnStorage(); calcularAntiguos(); actualizarSelects();
-            document.getElementById('select-interno').value = ''; document.getElementById('select-estado').value = ''; document.getElementById('txt-motivo').value = ''; document.getElementById('input-foto').value = ''; alternarCampos(); alert('Chequeo guardado.');
         }
 
         function guardarEnStorage() { localStorage.setItem('parque_bd_' + lineaActiva, JSON.stringify(bd)); }
@@ -262,14 +318,23 @@
 
         function parseFecha(str) { try { const [f, h] = str.split(' '); const [d, m, a] = f.split('/'); return new Date(`${a}-${m}-${d}T${h}`).getTime(); } catch(e) { return 0; } }
 
-        function visualizarFotoParticular() {
-            const interno = document.getElementById('select-visor').value; const contenedor = document.getElementById('visor-contenedor'); const img = document.getElementById('visor-img'); const txtVacio = document.getElementById('visor-vacio');
-            if (interno && bd[interno] && bd[interno].estado === 'SI' && bd[interno].foto) { img.src = bd[interno].foto; contenedor.classList.remove('hidden'); txtVacio.classList.add('hidden'); } else { img.src = ''; contenedor.classList.add('hidden'); txtVacio.classList.remove('hidden'); }
+        function visualizarFotosParticular() {
+            const interno = document.getElementById('select-visor').value; const contenedor = document.getElementById('visor-contenedor'); const txtVacio = document.getElementById('visor-vacio');
+            const img4 = document.getElementById('visor-img4'); const imgMenu = document.getElementById('visor-imgMenu'); const txtSerial = document.getElementById('visor-serial-txt');
+
+            if (interno && bd[interno] && bd[interno].estado === 'SI') {
+                txtSerial.textContent = bd[interno].serial || 'Sin número serial'; img4.src = bd[interno].foto4 || ''; imgMenu.src = bd[interno].fotoMenu || '';
+                document.getElementById('btn-down-4').style.display = bd[interno].foto4 ? 'inline-block' : 'none';
+                document.getElementById('btn-down-menu').style.display = bd[interno].fotoMenu ? 'inline-block' : 'none';
+                contenedor.classList.remove('hidden'); txtVacio.classList.add('hidden');
+            } else { contenedor.classList.add('hidden'); txtVacio.classList.remove('hidden'); }
         }
 
-        function descargarFotoParticular() {
-            const interno = document.getElementById('select-visor').value; const img = document.getElementById('visor-img'); if (!interno || !img.src) return;
-            const enlace = document.createElement('a'); enlace.href = img.src; enlace.download = `foto_linea_${lineaActiva}_interno_${interno}.jpg`; document.body.appendChild(enlace); enlace.click(); document.body.removeChild(enlace);
+        function descargarFoto(tipo) {
+            const interno = document.getElementById('select-visor').value; if (!interno) return;
+            const src = tipo === '4' ? bd[interno].foto4 : bd[interno].fotoMenu; if (!src) return;
+            const enlace = document.createElement('a'); enlace.href = src; enlace.download = `foto_${tipo}_linea_${lineaActiva}_interno_${interno}.jpg`;
+            document.body.appendChild(enlace); enlace.click(); document.body.removeChild(enlace);
         }
 
         function exportarPDF() {
@@ -282,11 +347,20 @@
 
             internos.forEach(interno => {
                 const item = bd[interno]; if (item.estado === 'Sin chequear') return; const tr = document.createElement('tr');
-                if (item.estado === 'SI') { hayOperativos = true; const fotoHtml = item.foto ? `<img src="${item.foto}" class="print-thumb">` : 'Sin foto'; tr.innerHTML = `<td><b>Interno ${interno}</b></td><td>${item.fecha}</td><td>${fotoHtml}</td>`; cuerpoSi.appendChild(tr); }
-                else if (item.estado === 'NO') { hayFallas = true; tr.innerHTML = `<td><b>Interno ${interno}</b></td><td>${item.fecha}</td><td class="badge-no">${item.motivo}</td>`; cuerpoNo.appendChild(tr); }
+                if (item.estado === 'SI') {
+                    hayOperativos = true;
+                    const f4Html = item.foto4 ? `<img src="${item.foto4}" class="print-thumb">` : '<span>Sin foto 4P</span>';
+                    const fMenuHtml = item.fotoMenu ? `<img src="${item.fotoMenu}" class="print-thumb">` : '<span>Sin foto Menú</span>';
+                    tr.innerHTML = `<td><b>Interno ${interno}</b></td><td>${item.fecha}</td><td>${item.serial || '-'}</td><td><div class="print-flex-thumbs">${f4Html}${fMenuHtml}</div></td>`;
+                    cuerpoSi.appendChild(tr);
+                } else if (item.estado === 'NO') {
+                    hayFallas = true;
+                    tr.innerHTML = `<td><b>Interno ${interno}</b></td><td>${item.fecha}</td><td class="badge-no">${item.motivo}</td>`;
+                    cuerpoNo.appendChild(tr);
+                }
             });
-            if (!hayOperativos) cuerpoSi.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#666;">No hay colectivos operativos</td></tr>';
-            if (!hayFallas) cuerpoNo.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#666;">No se registraron fallas</td></tr>';
+            if (!hayOperativos) cuerpoSi.innerHTML = '<tr><td colspan="4" style="text-align:center;">No hay colectivos operativos</td></tr>';
+            if (!hayFallas) cuerpoNo.innerHTML = '<tr><td colspan="3" style="text-align:center;">No se registraron fallas</td></tr>';
             window.print();
         }
     </script>
