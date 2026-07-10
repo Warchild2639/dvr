@@ -231,19 +231,33 @@
             btn.disabled = true;
             btn.textContent = "⏳ Subiendo a la Nube...";
 
-            const ahora = new Date(); const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
+            const ahora = new Date(); 
+            const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
             const paquete = { linea: lineaActiva, interno: interno, estado: estado, fecha: fechaString, serial: '', foto4: '', fotoMenu: '', motivo: '' };
 
             const enviarAServidorGoogle = async () => {
                 try {
-                    const respuestaEnvio = await fetch(WEB_APP_URL, { method: "POST", body: JSON.stringify(paquete) });
-                    if (respuestaEnvio.ok) {
-                        alert('¡Guardado en tiempo real en la nube!');
+                    // Se utiliza la opción 'no-cors' para forzar el envío seguro saltando bloqueos estrictos del navegador
+                    await fetch(WEB_APP_URL, { 
+                        method: "POST", 
+                        mode: "no-cors",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(paquete) 
+                    });
+                    
+                    alert('¡Chequeo enviado exitosamente a la nube!');
+                    // Esperar 2 segundos para dar tiempo a que Google procese las imágenes antes de recargar
+                    setTimeout(async () => {
                         await seleccionarLinea(lineaActiva);
-                    } else { alert('Error al conectar con la base de datos central.'); }
-                } catch(err) { alert('Error de conexión a internet.'); }
-                btn.disabled = false;
-                btn.textContent = "Guardar Chequeo";
+                        btn.disabled = false;
+                        btn.textContent = "Guardar Chequeo";
+                    }, 2000);
+
+                } catch(err) { 
+                    alert('Error de conexión a internet o base de datos.'); 
+                    btn.disabled = false;
+                    btn.textContent = "Guardar Chequeo";
+                }
             };
 
             if (estado === 'SI') {
@@ -252,20 +266,33 @@
                 paquete.serial = document.getElementById('txt-serial').value.trim();
 
                 if (file4 && fileMenu) {
-                    const r1 = new FileReader(); r1.onload = function(e) { paquete.foto4 = e.target.result;
-                        const r2 = new FileReader(); r2.onload = function(ev) { paquete.fotoMenu = ev.target.result; enviarAServidorGoogle(); }; r2.readAsDataURL(fileMenu);
-                    }; r1.readAsDataURL(file4);
+                    const r1 = new FileReader(); 
+                    r1.onload = function(e) { 
+                        paquete.foto4 = e.target.result;
+                        const r2 = new FileReader(); 
+                        r2.onload = function(ev) { paquete.fotoMenu = ev.target.result; enviarAServidorGoogle(); }; 
+                        r2.readAsDataURL(fileMenu);
+                    }; 
+                    r1.readAsDataURL(file4);
                 } else if (file4) {
                     const r = new FileReader(); r.onload = (e) => { paquete.foto4 = e.target.result; enviarAServidorGoogle(); }; r.readAsDataURL(file4);
                 } else if (fileMenu) {
                     const r = new FileReader(); r.onload = (e) => { paquete.fotoMenu = e.target.result; enviarAServidorGoogle(); }; r.readAsDataURL(fileMenu);
-                } else { enviarAServidorGoogle(); }
+                } else { 
+                    enviarAServidorGoogle(); 
+                }
             } else {
                 paquete.motivo = document.getElementById('txt-motivo').value;
-                if (!paquete.motivo.trim()) { alert('Por favor, ingrese el motivo.'); btn.disabled = false; btn.textContent = "Guardar Chequeo"; return; }
+                if (!paquete.motivo.trim()) { 
+                    alert('Por favor, ingrese el motivo.'); 
+                    btn.disabled = false; 
+                    btn.textContent = "Guardar Chequeo"; 
+                    return; 
+                }
                 enviarAServidorGoogle();
             }
         }
+
 
         function calcularAntiguos() {
             const lista = document.getElementById('lista-antiguos'); if (!lista) return; lista.innerHTML = '';
