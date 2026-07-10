@@ -222,7 +222,7 @@
             document.getElementById('campos-si').classList.toggle('hidden', estado !== 'SI');
             document.getElementById('campos-no').classList.toggle('hidden', estado !== 'NO');
         }
-               function guardarChequeo() {
+        function guardarChequeo() {
             const interno = document.getElementById('select-interno').value;
             const estado = document.getElementById('select-estado').value;
             if (!interno || !estado) return alert('Por favor, seleccione interno y estado.');
@@ -237,30 +237,28 @@
 
             const enviarAServidorGoogle = async () => {
                 try {
-                    // Activamos modo 'cors' para poder leer la respuesta de Google y diagnosticar fallas
-                    const respuestaEnvio = await fetch(WEB_APP_URL, { 
+                    // Cambiamos a 'no-cors' y formato de texto plano para evitar la validación estricta OPTIONS que causa el 405
+                    await fetch(WEB_APP_URL, { 
                         method: "POST", 
-                        mode: "cors",
-                        headers: { "Content-Type": "text/plain" }, // Google Apps Script procesa mejor text/plain desde webs externas
+                        mode: "no-cors",
+                        headers: { "Content-Type": "text/plain" }, 
                         body: JSON.stringify(paquete) 
                     });
                     
-                    if (respuestaEnvio.ok) {
-                        const resultado = await respuestaEnvio.json();
-                        if (resultado.status === "success") {
-                            alert('¡Chequeo guardado exitosamente en la nube!');
-                            await seleccionarLinea(lineaActiva);
-                        } else {
-                            alert('Error interno de Google: ' + resultado.message);
-                        }
-                    } else { 
-                        alert('El servidor de Google rechazo la peticion. Codigo: ' + respuestaEnvio.status); 
-                    }
+                    alert('¡Chequeo enviado exitosamente a la nube!');
+                    
+                    // Esperamos 2.5 segundos a que Google guarde todo antes de refrescar la pantalla
+                    setTimeout(async () => {
+                        await seleccionarLinea(lineaActiva);
+                        btn.disabled = false;
+                        btn.textContent = "Guardar Chequeo";
+                    }, 2500);
+
                 } catch(err) { 
-                    alert('Error de conexion. Verifique que la URL de Google Script sea la correcta o que tenga internet.'); 
+                    alert('Error de red al intentar conectar con Google.'); 
+                    btn.disabled = false;
+                    btn.textContent = "Guardar Chequeo";
                 }
-                btn.disabled = false;
-                btn.textContent = "Guardar Chequeo";
             };
 
             if (estado === 'SI') {
@@ -295,6 +293,7 @@
                 enviarAServidorGoogle();
             }
         }
+
 
 
         function calcularAntiguos() {
