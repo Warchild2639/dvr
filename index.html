@@ -239,7 +239,7 @@
                     const respuestaEnvio = await fetch(WEB_APP_URL, { method: "POST", body: JSON.stringify(paquete) });
                     if (respuestaEnvio.ok) {
                         alert('¡Guardado en tiempo real en la nube!');
-                        await seleccionarLinea(lineaActActive = lineaActiva);
+                        await seleccionarLinea(lineaActiva);
                     } else { alert('Error al conectar con la base de datos central.'); }
                 } catch(err) { alert('Error de conexión a internet.'); }
                 btn.disabled = false;
