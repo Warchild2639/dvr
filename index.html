@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control de Dispositivos - Colectivos</title>
-    <!-- Librería OCR para leer texto de las imágenes automáticamente -->
-    <script src="https://jsdelivr.net"></script>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 650px; margin: 20px auto; padding: 0 15px; background: #f4f7f6; color: #333; }
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 0 15px; background: #f4f7f6; color: #333; }
         h1, h2, h3 { text-align: center; color: #0056b3; }
         .section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
         label { display: block; margin: 10px 0 5px; font-weight: bold; }
@@ -21,11 +19,9 @@
         .hidden { display: none; }
         ul { list-style: none; padding: 0; }
         li { background: #eee; margin: 5px 0; padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; font-size: 14px; align-items: center; }
-        
         .foto-container { text-align: center; margin-top: 10px; background: #fafafa; padding: 10px; border: 1px dashed #bbb; border-radius: 4px; }
         .grid-fotos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .foto-visualizador { max-width: 100%; max-height: 200px; border-radius: 4px; display: block; margin: 0 auto; object-fit: cover; }
-        
+        .foto-visualizador { max-width: 100%; max-height: 180px; border-radius: 4px; display: block; margin: 0 auto; object-fit: cover; }
         .linea-btn { margin-bottom: 12px; font-size: 18px; padding: 15px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
         .verde-claro { background: #4cbd5c !important; }
         .verde-claro:hover { background: #3fa34f !important; }
@@ -35,12 +31,9 @@
         .morado:hover { background: #611881 !important; }
         .verde-oscuro { background: #004d40 !important; }
         .verde-oscuro:hover { background: #00332c !important; }
-        
         .btn-volver { background: #6c757d; font-size: 14px; padding: 8px; width: auto; display: inline-block; margin-bottom: 15px; }
         .btn-volver:hover { background: #5a6268; }
         .lbl-linea-activa { font-size: 16px; background: #e9ecef; padding: 8px; border-radius: 4px; display: inline-block; font-weight: bold; margin-bottom: 15px; color: #495057; border-left: 5px solid #007bff; }
-        .loading-ocr { font-size: 13px; color: #d39e00; font-weight: bold; margin-bottom: 10px; text-align: center; }
-
         #reporte-impresion { display: none; }
         @media print {
             body { background: white; color: black; max-width: 100%; margin: 0; padding: 0; }
@@ -57,75 +50,54 @@
     </style>
 </head>
 <body>
-
     <h1>Control de Dispositivos</h1>
-
-    <!-- MENÚ PRINCIPAL -->
     <div id="pantalla-menu" class="section">
         <h2>Seleccione la Línea de Colectivo</h2>
         <p style="font-size:14px; color:#666; text-align:center; margin-bottom:20px;">Los internos se descargarán automáticamente desde la subcarpeta /parque.</p>
-        
         <button class="linea-btn verde-claro" onclick="seleccionarLinea('271')">Línea 271</button>
         <button class="linea-btn verde-claro" onclick="seleccionarLinea('373')">Línea 373</button>
         <button class="linea-btn verde-claro" onclick="seleccionarLinea('384')">Línea 384</button>
-        
         <button class="linea-btn azul" onclick="seleccionarLinea('177')">Línea 177</button>
         <button class="linea-btn azul" onclick="seleccionarLinea('263')">Línea 263</button>
         <button class="linea-btn azul" onclick="seleccionarLinea('79')">Línea 79</button>
-        
         <button class="linea-btn morado" onclick="seleccionarLinea('514')">Línea 514</button>
-        
         <button class="linea-btn verde-oscuro" onclick="seleccionarLinea('Varela')">Línea Varela</button>
     </div>
-
-    <!-- PANEL DE TRABAJO -->
     <div id="pantalla-gestion" class="hidden">
-        
         <button class="btn-volver" onclick="volverAlMenu()">← Cambiar de Línea</button>
         <div><span id="linea-activa-txt" class="lbl-linea-activa">Línea: Ninguna</span></div>
-
-        <!-- REGISTRAR DATOS -->
         <div class="section">
             <h2>1. Registrar Chequeo</h2>
             <label for="select-interno">Número de Interno:</label>
             <select id="select-interno">
                 <option value="">-- Seleccione un interno --</option>
             </select>
-
             <label for="select-estado">¿El dispositivo funciona?</label>
             <select id="select-estado" onchange="alternarCampos()">
                 <option value="">-- Seleccione estado --</option>
                 <option value="SI">SÍ funciona</option>
                 <option value="NO">NO funciona</option>
             </select>
-
             <div id="campos-si" class="hidden">
-                <label for="input-foto4">1. Foto de las 4 Pantallas:</label>
+                <label for="input-foto4">Foto de las 4 Pantallas:</label>
                 <input type="file" id="input-foto4" accept="image/*">
-
-                <label for="input-fotoMenu">2. Foto del Menú Interno (Lector Serial):</label>
-                <input type="file" id="input-fotoMenu" accept="image/*" onchange="procesarFotoSerial(this)">
-                
-                <div id="status-ocr" class="loading-ocr hidden">⏳ Analizando imagen... Extrayendo número serial...</div>
-
-                <label for="txt-serial">Número Serial Detectado:</label>
-                <input type="text" id="txt-serial" placeholder="El número se extraerá solo o puede escribirlo...">
+                <label for="input-fotoMenu">Foto del Menú Interno:</label>
+                <input type="file" id="input-fotoMenu" accept="image/*">
+                <label for="txt-serial">Número Serial:</label>
+                <input type="text" id="txt-serial" placeholder="Escriba el número serial aquí...">
             </div>
-
             <div id="campos-no" class="hidden">
                 <label for="txt-motivo">Motivo de la falla:</label>
                 <textarea id="txt-motivo" rows="3" placeholder="Escriba el motivo aquí..."></textarea>
             </div>
             <button onclick="guardarChequeo()" style="margin-top:15px;">Guardar Chequeo</button>
         </div>
-        <!-- VISOR DE MULTIMEDIA -->
         <div class="section">
             <h2>2. Consultar Fotos e Info de Interno</h2>
             <label for="select-visor">Seleccione Interno para consultar:</label>
             <select id="select-visor" onchange="visualizarFotosParticular()">
                 <option value="">-- Seleccione un interno --</option>
             </select>
-            
             <div id="visor-contenedor" class="foto-container hidden">
                 <p style="text-align:left; margin:5px 0;"><b>N° Serial:</b> <span id="visor-serial-txt">-</span></p>
                 <div class="grid-fotos">
@@ -143,8 +115,6 @@
             </div>
             <p id="visor-vacio" style="font-size: 13px; color: #666; text-align: center; margin-top: 5px;">Este interno no posee registros multimedia.</p>
         </div>
-
-        <!-- REPORTES -->
         <div class="section">
             <h2>3. Alertas y Exportación</h2>
             <h3>Próximos a chequear (Más antiguos o sin revisar)</h3>
@@ -152,12 +122,9 @@
             <button class="btn-export" onclick="exportarPDF()">Exportar Reporte Completo a PDF</button>
         </div>
     </div>
-
-    <!-- DOCUMENTO DE IMPRESIÓN (PDF) -->
     <div id="reporte-impresion">
         <h2 id="print-titulo" style="text-align: center; color: #000; margin-bottom: 5px;">Reporte General de Control de Flota</h2>
         <p id="fecha-reporte" style="text-align: center; font-size: 12px; color: #555; margin-bottom: 25px;"></p>
-        
         <div class="print-section">
             <h3 style="color: green; border-bottom: 2px solid green; padding-bottom: 3px;">Dispositivos que SÍ Funcionan</h3>
             <table>
@@ -172,7 +139,6 @@
                 <tbody id="tabla-si-cuerpo"></tbody>
             </table>
         </div>
-
         <div class="print-section">
             <h3 style="color: red; border-bottom: 2px solid red; padding-bottom: 3px;">Dispositivos que NO Funcionan</h3>
             <table>
@@ -194,7 +160,6 @@
         async function seleccionarLinea(nombreLinea) {
             lineaActiva = nombreLinea;
             bd = JSON.parse(localStorage.getItem('parque_bd_' + lineaActiva)) || {};
-
             try {
                 const respuesta = await fetch(`parque/${lineaActiva}.txt`);
                 if (respuesta.ok) {
@@ -208,37 +173,11 @@
                     guardarEnStorage();
                 }
             } catch (error) { console.error("Error al sincronizar el parque:", error); }
-
             document.getElementById('linea-activa-txt').textContent = "Línea activa: " + lineaActiva;
             document.getElementById('pantalla-menu').classList.add('hidden');
             document.getElementById('pantalla-gestion').classList.remove('hidden');
-            
             actualizarSelects();
             calcularAntiguos();
-        }
-
-        // FUNCIÓN OCR: Escanea la foto en busca de texto
-        function procesarFotoSerial(input) {
-            const file = input.files[0];
-            if (!file) return;
-
-            const statusTxt = document.getElementById('status-ocr');
-            statusTxt.classList.remove('hidden');
-
-            const lector = new FileReader();
-            lector.onload = function(e) {
-                Tesseract.recognize(e.target.result, 'eng+spa')
-                    .then(({ data: { text } }) => {
-                        const coincidencias = text.match(/[A-Z0-9]{5,20}/g);
-                        if (coincidencias && coincidencias.length > 0) {
-                            const mejorCoincidencia = coincidencias.reduce((a, b) => a.length > b.length ? a : b);
-                            document.getElementById('txt-serial').value = mejorCoincidencia;
-                        }
-                    })
-                    .catch(err => console.error("Error en lectura OCR:", err))
-                    .finally(() => statusTxt.classList.add('hidden'));
-            };
-            lector.readAsDataURL(file);
         }
 
         function volverAlMenu() {
@@ -251,51 +190,50 @@
             const selectForm = document.getElementById('select-interno');
             const selectVisor = document.getElementById('select-visor');
             const valorFormAntes = selectForm.value; const valorVisorAntes = selectVisor.value;
-
             selectForm.innerHTML = '<option value="">-- Seleccione un interno --</option>';
             selectVisor.innerHTML = '<option value="">-- Seleccione un interno --</option>';
-            
             Object.keys(bd).sort((a,b) => a.localeCompare(b, undefined, {numeric: true})).forEach(interno => {
                 const optForm = document.createElement('option'); optForm.value = interno; optForm.textContent = `Interno ${interno} (${bd[interno].estado})`; selectForm.appendChild(optForm);
                 const optVisor = document.createElement('option'); optVisor.value = interno; optVisor.textContent = `Interno ${interno}`; selectVisor.appendChild(optVisor);
             });
             selectForm.value = bd[valorFormAntes] ? valorFormAntes : ''; selectVisor.value = bd[valorVisorAntes] ? valorVisorAntes : ''; visualizarFotosParticular();
         }
+
         function alternarCampos() {
             const estado = document.getElementById('select-estado').value;
             document.getElementById('campos-si').classList.toggle('hidden', estado !== 'SI');
             document.getElementById('campos-no').classList.toggle('hidden', estado !== 'NO');
         }
-
         function guardarChequeo() {
             const interno = document.getElementById('select-interno').value;
             const estado = document.getElementById('select-estado').value;
             if (!interno || !estado) return alert('Por favor, seleccione interno y estado.');
             const ahora = new Date(); const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
-
             if (estado === 'SI') {
                 const file4 = document.getElementById('input-foto4').files[0];
                 const fileMenu = document.getElementById('input-fotoMenu').files[0];
                 const serialVal = document.getElementById('txt-serial').value.trim();
-
                 const registrosTemp = { estado: 'SI', fecha: fechaString, motivo: '', serial: serialVal, foto4: bd[interno].foto4 || '', fotoMenu: bd[interno].fotoMenu || '' };
-
-                const procesarGuardadoFinal = () => {
+                const finalizarTransaccion = () => {
                     bd[interno] = registrosTemp; guardarEnStorage(); calcularAntiguos(); actualizarSelects();
                     document.getElementById('select-interno').value = ''; document.getElementById('select-estado').value = ''; document.getElementById('txt-serial').value = '';
                     document.getElementById('input-foto4').value = ''; document.getElementById('input-fotoMenu').value = ''; alternarCampos();
                     alert('Chequeo guardado exitosamente.');
                 };
-
-                const promesas = [];
-                if (file4) {
-                    promesas.push(new Promise(res => { const r = new FileReader(); r.onload = (e) => { registrosTemp.foto4 = e.target.result; res(); }; r.readAsDataURL(file4); }));
-                }
-                if (fileMenu) {
-                    promesas.push(new Promise(res => { const r = new FileReader(); r.onload = (e) => { registrosTemp.fotoMenu = e.target.result; res(); }; r.readAsDataURL(fileMenu); }));
-                }
-
-                if (promesas.length > 0) { Promise.all(promesas).then(procesarGuardadoFinal); } else { procesarGuardadoFinal(); }
+                if (file4 && fileMenu) {
+                    const r1 = new FileReader();
+                    r1.onload = function(e) {
+                        registrosTemp.foto4 = e.target.result;
+                        const r2 = new FileReader();
+                        r2.onload = function(ev) { registrosTemp.fotoMenu = ev.target.result; finalizarTransaccion(); };
+                        r2.readAsDataURL(fileMenu);
+                    };
+                    r1.readAsDataURL(file4);
+                } else if (file4) {
+                    const r = new FileReader(); r.onload = (e) => { registrosTemp.foto4 = e.target.result; finalizarTransaccion(); }; r.readAsDataURL(file4);
+                } else if (fileMenu) {
+                    const r = new FileReader(); r.onload = (e) => { registrosTemp.fotoMenu = e.target.result; finalizarTransaccion(); }; r.readAsDataURL(fileMenu);
+                } else { finalizarTransaccion(); }
             } else {
                 const motivo = document.getElementById('txt-motivo').value; if (!motivo.trim()) return alert('Por favor, ingrese el motivo.');
                 bd[interno] = { estado: 'NO', fecha: fechaString, motivo: motivo, serial: '', foto4: '', fotoMenu: '' };
@@ -321,7 +259,6 @@
         function visualizarFotosParticular() {
             const interno = document.getElementById('select-visor').value; const contenedor = document.getElementById('visor-contenedor'); const txtVacio = document.getElementById('visor-vacio');
             const img4 = document.getElementById('visor-img4'); const imgMenu = document.getElementById('visor-imgMenu'); const txtSerial = document.getElementById('visor-serial-txt');
-
             if (interno && bd[interno] && bd[interno].estado === 'SI') {
                 txtSerial.textContent = bd[interno].serial || 'Sin número serial'; img4.src = bd[interno].foto4 || ''; imgMenu.src = bd[interno].fotoMenu || '';
                 document.getElementById('btn-down-4').style.display = bd[interno].foto4 ? 'inline-block' : 'none';
@@ -340,11 +277,9 @@
         function exportarPDF() {
             const internos = Object.keys(bd).sort((a, b) => a.localeCompare(b, undefined, {numeric: true})); if (internos.length === 0) return alert('No hay datos.');
             const cuerpoSi = document.getElementById('tabla-si-cuerpo'); const cuerpoNo = document.getElementById('tabla-no-cuerpo'); cuerpoSi.innerHTML = ''; cuerpoNo.innerHTML = '';
-            
             document.getElementById('print-titulo').textContent = `Reporte de Control - Línea ${lineaActiva}`;
             document.getElementById('fecha-reporte').textContent = 'Reporte emitido el: ' + new Date().toLocaleString('es-AR');
             let hayOperativos = false; let hayFallas = false;
-
             internos.forEach(interno => {
                 const item = bd[interno]; if (item.estado === 'Sin chequear') return; const tr = document.createElement('tr');
                 if (item.estado === 'SI') {
