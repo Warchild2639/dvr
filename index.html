@@ -19,10 +19,11 @@
         .hidden { display: none; }
         ul { list-style: none; padding: 0; }
         li { background: #eee; margin: 5px 0; padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; font-size: 14px; align-items: center; }
+        
         .foto-container { text-align: center; margin-top: 10px; background: #fafafa; padding: 10px; border: 1px dashed #bbb; border-radius: 4px; }
         .foto-visualizador { max-width: 100%; max-height: 250px; border-radius: 4px; display: inline-block; }
         
-        /* ESTILOS DEL NUEVO MENÚ DE LÍNEAS */
+        /* BOTONES DEL MENÚ PRINCIPAL */
         .linea-btn { margin-bottom: 12px; font-size: 18px; padding: 15px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
         .verde-claro { background: #4cbd5c !important; }
         .verde-claro:hover { background: #3fa34f !important; }
@@ -58,7 +59,7 @@
     <!-- PANTALLA INICIAL: MENÚ DE SELECCIÓN DE LÍNEAS -->
     <div id="pantalla-menu" class="section">
         <h2>Seleccione la Línea de Colectivo</h2>
-        <p style="font-size:14px; color:#666; text-align:center; margin-bottom:20px;">Los archivos de parque se cargan desde la subcarpeta "/parque".</p>
+        <p style="font-size:14px; color:#666; text-align:center; margin-bottom:20px;">Los internos se descargarán automáticamente desde la subcarpeta /parque.</p>
         
         <button class="linea-btn verde-claro" onclick="seleccionarLinea('271')">Línea 271</button>
         <button class="linea-btn verde-claro" onclick="seleccionarLinea('373')">Línea 373</button>
@@ -79,17 +80,9 @@
         <button class="btn-volver" onclick="volverAlMenu()">← Cambiar de Línea</button>
         <div><span id="linea-activa-txt" class="lbl-linea-activa">Línea: Ninguna</span></div>
 
-        <!-- 1. CARGA INICIAL DEL TXT -->
-        <div class="section" id="sec-loader">
-            <h2>1. Cargar / Actualizar Base de Datos</h2>
-            <p id="txt-ayuda-archivo" style="font-size:14px; color:#666;"></p>
-            <input type="file" id="txt-file" accept=".txt">
-            <button onclick="cargarTxt()">Inicializar / Actualizar Internos</button>
-        </div>
-
-        <!-- 2. FORMULARIO DE CHEQUEO -->
+        <!-- 1. FORMULARIO DE CHEQUEO -->
         <div class="section">
-            <h2>2. Registrar Chequeo</h2>
+            <h2>1. Registrar Chequeo</h2>
             <label for="select-interno">Número de Interno:</label>
             <select id="select-interno">
                 <option value="">-- Seleccione un interno --</option>
@@ -114,9 +107,9 @@
             <button onclick="guardarChequeo()" style="margin-top:15px;">Guardar Chequeo</button>
         </div>
 
-        <!-- 3. VISOR DE FOTOS -->
+        <!-- 2. VISOR DE FOTOS -->
         <div class="section">
-            <h2>3. Consultar Foto de Interno</h2>
+            <h2>2. Consultar Foto de Interno</h2>
             <label for="select-visor">Seleccione Interno para ver/descargar foto:</label>
             <select id="select-visor" onchange="visualizarFotoParticular()">
                 <option value="">-- Seleccione un interno --</option>
@@ -128,16 +121,16 @@
             <p id="visor-vacio" style="font-size: 13px; color: #666; text-align: center; margin-top: 5px;">Este interno no posee fotos registradas.</p>
         </div>
 
-        <!-- 4. ALERTAS -->
+        <!-- 3. ALERTAS -->
         <div class="section">
-            <h2>4. Alertas y Exportación</h2>
+            <h2>3. Alertas y Exportación</h2>
             <h3>Próximos a chequear (Más antiguos o sin revisar)</h3>
             <ul id="lista-antiguos"></ul>
             <button class="btn-export" onclick="exportarPDF()">Exportar Reporte Completo a PDF</button>
         </div>
     </div>
 
-    <!-- TABLAS DEL PDF -->
+    <!-- TABLAS EXCLUSIVAS DEL PDF -->
     <div id="reporte-impresion">
         <h2 id="print-titulo" style="text-align: center; color: #000; margin-bottom: 5px;">Reporte General de Control de Flota</h2>
         <p id="fecha-reporte" style="text-align: center; font-size: 12px; color: #555; margin-bottom: 25px;"></p>
@@ -163,57 +156,51 @@
         </div>
     </div>
     <script>
-        // Variables globales de control de línea activa
         let lineaActiva = "";
         let bd = {};
 
-        // Cambiar la pantalla y setear la base de datos de la línea elegida
-        function seleccionarLinea(nombreLinea) {
+        // Función asíncrona para leer el archivo remoto desde el servidor GitHub
+        async function seleccionarLinea(nombreLinea) {
             lineaActiva = nombreLinea;
             
-            // Cada línea maneja su propia clave única en el localStorage
+            // Cargar los registros locales guardados en este navegador para la línea
             bd = JSON.parse(localStorage.getItem('parque_bd_' + lineaActiva)) || {};
-            
-            // Actualizar etiquetas visuales de ayuda
+
+            try {
+                // Descarga automática del archivo .txt desde el servidor remoto
+                const respuesta = await fetch(`parque/${lineaActiva}.txt`);
+                
+                if (respuesta.ok) {
+                    const texto = await respuesta.text();
+                    const internosArchivo = texto.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                    
+                    // Sincronizar el archivo con la memoria, sin borrar chequeos previos
+                    internosArchivo.forEach(interno => {
+                        if (!bd[interno]) {
+                            bd[interno] = { estado: 'Sin chequear', fecha: '', motivo: '', foto: '' };
+                        }
+                    });
+                    guardarEnStorage();
+                } else {
+                    console.warn(`No se encontró el archivo automático parque/${lineaActiva}.txt. Se usarán datos locales.`);
+                }
+            } catch (error) {
+                console.error("Error al conectar con el parque automático:", error);
+            }
+
+            // Cambiar de pantalla y renderizar datos
             document.getElementById('linea-activa-txt').textContent = "Línea activa: " + lineaActiva;
-            document.getElementById('txt-ayuda-archivo').textContent = `Seleccioná el archivo correspondiente de la subcarpeta: "parque/${lineaActiva}.txt"`;
-            
-            // Intercambiar pantallas
             document.getElementById('pantalla-menu').classList.add('hidden');
             document.getElementById('pantalla-gestion').classList.remove('hidden');
             
-            // Refrescar los selectores con los datos de esta línea específica
             actualizarSelects();
             calcularAntiguos();
         }
 
         function volverAlMenu() {
-            lineaActiva = "";
-            bd = {};
+            lineaActiva = ""; bd = {};
             document.getElementById('pantalla-gestion').classList.add('hidden');
             document.getElementById('pantalla-menu').classList.remove('hidden');
-        }
-
-        function cargarTxt() {
-            const fileInput = document.getElementById('txt-file');
-            if (!fileInput.files || !fileInput.files[0]) return alert('Por favor, selecciona un archivo .txt primero.');
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const lineas = e.target.result.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-                lineas.forEach(linea => {
-                    const interno = linea.trim();
-                    if (interno && !bd[interno]) { 
-                        bd[interno] = { estado: 'Sin chequear', fecha: '', motivo: '', foto: '' }; 
-                    }
-                });
-                guardarEnStorage(); 
-                actualizarSelects(); 
-                calcularAntiguos(); 
-                fileInput.value = ''; // Limpiar el campo de carga
-                alert(`Internos de la Línea ${lineaActiva} cargados con éxito.`);
-            };
-            reader.readAsText(fileInput.files[0]);
         }
 
         function actualizarSelects() {
@@ -244,7 +231,7 @@
             const ahora = new Date(); const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
 
             if (estado === 'SI') {
-                const fotoFile = document.getElementById('input-foto').files[0];
+                const fotoFile = document.getElementById('input-foto').files;
                 if (fotoFile) {
                     const reader = new FileReader();
                     reader.onload = function(e) { bd[interno] = { estado: 'SI', fecha: fechaString, motivo: '', foto: e.target.result }; finalizarGuardado(); };
@@ -261,10 +248,7 @@
             document.getElementById('select-interno').value = ''; document.getElementById('select-estado').value = ''; document.getElementById('txt-motivo').value = ''; document.getElementById('input-foto').value = ''; alternarCampos(); alert('Chequeo guardado.');
         }
 
-        function guardarEnStorage() { 
-            // Guarda los datos exclusivamente bajo la clave de la línea activa
-            localStorage.setItem('parque_bd_' + lineaActiva, JSON.stringify(bd)); 
-        }
+        function guardarEnStorage() { localStorage.setItem('parque_bd_' + lineaActiva, JSON.stringify(bd)); }
 
         function calcularAntiguos() {
             const lista = document.getElementById('lista-antiguos'); if (!lista) return; lista.innerHTML = '';
@@ -292,10 +276,8 @@
             const internos = Object.keys(bd).sort((a, b) => a.localeCompare(b, undefined, {numeric: true})); if (internos.length === 0) return alert('No hay datos.');
             const cuerpoSi = document.getElementById('tabla-si-cuerpo'); const cuerpoNo = document.getElementById('tabla-no-cuerpo'); cuerpoSi.innerHTML = ''; cuerpoNo.innerHTML = '';
             
-            // Personaliza el título del PDF según la línea activa
             document.getElementById('print-titulo').textContent = `Reporte de Control - Línea ${lineaActiva}`;
             document.getElementById('fecha-reporte').textContent = 'Reporte emitido el: ' + new Date().toLocaleString('es-AR');
-            
             let hayOperativos = false; let hayFallas = false;
 
             internos.forEach(interno => {
