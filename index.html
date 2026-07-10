@@ -222,7 +222,7 @@
             document.getElementById('campos-si').classList.toggle('hidden', estado !== 'SI');
             document.getElementById('campos-no').classList.toggle('hidden', estado !== 'NO');
         }
-        function guardarChequeo() {
+               function guardarChequeo() {
             const interno = document.getElementById('select-interno').value;
             const estado = document.getElementById('select-estado').value;
             if (!interno || !estado) return alert('Por favor, seleccione interno y estado.');
@@ -237,27 +237,30 @@
 
             const enviarAServidorGoogle = async () => {
                 try {
-                    // Se utiliza la opción 'no-cors' para forzar el envío seguro saltando bloqueos estrictos del navegador
-                    await fetch(WEB_APP_URL, { 
+                    // Activamos modo 'cors' para poder leer la respuesta de Google y diagnosticar fallas
+                    const respuestaEnvio = await fetch(WEB_APP_URL, { 
                         method: "POST", 
-                        mode: "no-cors",
-                        headers: { "Content-Type": "application/json" },
+                        mode: "cors",
+                        headers: { "Content-Type": "text/plain" }, // Google Apps Script procesa mejor text/plain desde webs externas
                         body: JSON.stringify(paquete) 
                     });
                     
-                    alert('¡Chequeo enviado exitosamente a la nube!');
-                    // Esperar 2 segundos para dar tiempo a que Google procese las imágenes antes de recargar
-                    setTimeout(async () => {
-                        await seleccionarLinea(lineaActiva);
-                        btn.disabled = false;
-                        btn.textContent = "Guardar Chequeo";
-                    }, 2000);
-
+                    if (respuestaEnvio.ok) {
+                        const resultado = await respuestaEnvio.json();
+                        if (resultado.status === "success") {
+                            alert('¡Chequeo guardado exitosamente en la nube!');
+                            await seleccionarLinea(lineaActiva);
+                        } else {
+                            alert('Error interno de Google: ' + resultado.message);
+                        }
+                    } else { 
+                        alert('El servidor de Google rechazo la peticion. Codigo: ' + respuestaEnvio.status); 
+                    }
                 } catch(err) { 
-                    alert('Error de conexión a internet o base de datos.'); 
-                    btn.disabled = false;
-                    btn.textContent = "Guardar Chequeo";
+                    alert('Error de conexion. Verifique que la URL de Google Script sea la correcta o que tenga internet.'); 
                 }
+                btn.disabled = false;
+                btn.textContent = "Guardar Chequeo";
             };
 
             if (estado === 'SI') {
