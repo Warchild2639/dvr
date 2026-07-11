@@ -314,7 +314,7 @@
         function obtenerLinkMiniaturaDrive(urlDrive) {
             if (!urlDrive || !urlDrive.startsWith('http')) return '';
             const match = urlDrive.match(/\/d\/([a-zA-Z0-9_-]+)/) || urlDrive.match(/id=([a-zA-Z0-9_-]+)/);
-            return match ? "https://google.com" + match : urlDrive;
+            return match ? "https://google.com" + match[1] : urlDrive;
         }
 
         function visualizarFotosParticular() {
@@ -327,10 +327,17 @@
                 contenedor.classList.add('hidden'); txtVacio.classList.remove('hidden'); return;
             }
 
-            let registro = null; const llaves = Object.keys(bd);
-            for (let i = 0; i < llaves.length; i++) {
-                if (String(llaves[i]).trim() === internoSeleccionado) {
-                    registro = bd[llaves[i]]; break;
+            // Buscador Inteligente Dual de Tipos (Maneja cadenas de texto y enteros puros del JSONP)
+            let registro = bd[internoSeleccionado]; 
+            if (!registro && !isNaN(internoSeleccionado)) {
+                registro = bd[Number(internoSeleccionado)];
+            }
+            if (!registro) {
+                const llaves = Object.keys(bd);
+                for (let i = 0; i < llaves.length; i++) {
+                    if (String(llaves[i]).trim() === internoSeleccionado) {
+                        registro = bd[llaves[i]]; break;
+                    }
                 }
             }
 
@@ -354,10 +361,14 @@
             const internoSeleccionado = String(selectVisor.value).trim();
             if (!internoSeleccionado) return;
 
-            let registro = null; const llaves = Object.keys(bd);
-            for (let i = 0; i < llaves.length; i++) {
-                if (String(llaves[i]).trim() === internoSeleccionado) {
-                    registro = bd[llaves[i]]; break;
+            let registro = bd[internoSeleccionado];
+            if (!registro && !isNaN(internoSeleccionado)) registro = bd[Number(internoSeleccionado)];
+            if (!registro) {
+                const llaves = Object.keys(bd);
+                for (let i = 0; i < llaves.length; i++) {
+                    if (String(llaves[i]).trim() === internoSeleccionado) {
+                        registro = bd[llaves[i]]; break;
+                    }
                 }
             }
             if (registro) {
