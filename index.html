@@ -170,7 +170,7 @@
                     resolve();
                 };
                 const script = document.createElement("script");
-                script.src = WEB_APP_URL + "?callback=" + nombreCallback;
+                script.src = WEB_APP_URL + "?callback=" + nombreCallback + "&_nocache=" + Date.now();
                 script.onerror = function() {
                     console.error("Error cargando datos por fallas de red externa.");
                     delete window[nombreCallback];
