@@ -160,17 +160,29 @@
         let bd = {}; 
         let baseCompletaNube = {};
 
-        async function cargarDatosDesdeNube() {
-            try {
-                const res = await fetch(WEB_APP_URL);
-                if (res.ok) {
-                    baseCompletaNube = await res.json();
-                }
-            } catch(e) { console.error("Error leyendo de la nube", e); }
+        function cargarDatosDesdeNube() {
+            return new Promise((resolve) => {
+                const nombreCallback = "jsonp_callback_" + Date.now();
+                window[nombreCallback] = function(datos) {
+                    baseCompletaNube = datos;
+                    delete window[nombreCallback];
+                    document.body.removeChild(script);
+                    resolve();
+                };
+                const script = document.createElement("script");
+                script.src = WEB_APP_URL + "?callback=" + nombreCallback;
+                script.onerror = function() {
+                    console.error("Error cargando datos por fallas de red externa.");
+                    delete window[nombreCallback];
+                    try { document.body.removeChild(script); } catch(e){}
+                    resolve();
+                };
+                document.body.appendChild(script);
+            });
         }
+
         async function seleccionarLinea(nombreLinea) {
             lineaActiva = nombreLinea;
-            
             document.getElementById('linea-activa-txt').textContent = "Cargando Línea " + lineaActiva + "...";
             document.getElementById('pantalla-menu').classList.add('hidden');
             document.getElementById('pantalla-gestion').classList.remove('hidden');
@@ -219,6 +231,7 @@
             document.getElementById('campos-si').classList.toggle('hidden', estado !== 'SI');
             document.getElementById('campos-no').classList.toggle('hidden', estado !== 'NO');
         }
+
         function guardarChequeo() {
             const interno = document.getElementById('select-interno').value;
             const estado = document.getElementById('select-estado').value;
@@ -240,19 +253,15 @@
                         headers: { "Content-Type": "text/plain" }, 
                         body: JSON.stringify(paquete) 
                     });
-                    
                     alert('¡Chequeo enviado exitosamente a la nube!');
-                    
                     setTimeout(async () => {
                         await seleccionarLinea(lineaActiva);
                         btn.disabled = false;
                         btn.textContent = "Guardar Chequeo";
                     }, 2500);
-
                 } catch(err) { 
                     alert('Error de red al intentar conectar con Google.'); 
-                    btn.disabled = false;
-                    btn.textContent = "Guardar Chequeo";
+                    btn.disabled = false; btn.textContent = "Guardar Chequeo";
                 }
             };
 
@@ -274,16 +283,12 @@
                     const r = new FileReader(); r.onload = (e) => { paquete.foto4 = e.target.result; enviarAServidorGoogle(); }; r.readAsDataURL(file4);
                 } else if (fileMenu) {
                     const r = new FileReader(); r.onload = (e) => { paquete.fotoMenu = e.target.result; enviarAServidorGoogle(); }; r.readAsDataURL(fileMenu);
-                } else { 
-                    enviarAServidorGoogle(); 
-                }
+                } else { enviarAServidorGoogle(); }
             } else {
                 paquete.motivo = document.getElementById('txt-motivo').value;
                 if (!paquete.motivo.trim()) { 
                     alert('Por favor, ingrese el motivo.'); 
-                    btn.disabled = false; 
-                    btn.textContent = "Guardar Chequeo"; 
-                    return; 
+                    btn.disabled = false; btn.textContent = "Guardar Chequeo"; return; 
                 }
                 enviarAServidorGoogle();
             }
@@ -302,74 +307,55 @@
             try { 
                 if (!str) return 0;
                 if (str.includes('/')) {
-                    const [f, h] = str.split(' '); 
-                    const [d, m, a] = f.split('/'); 
+                    const [f, h] = str.split(' '); const [d, m, a] = f.split('/'); 
                     return new Date(`${a}-${m}-${d}T${h}`).getTime(); 
                 }
-                const parsed = Date.parse(str);
-                return isNaN(parsed) ? 0 : parsed;
+                const parsed = Date.parse(str); return isNaN(parsed) ? 0 : parsed;
             } catch(e) { return 0; } 
         }
+
         function visualizarFotosParticular() {
             const selectVisor = document.getElementById('select-visor');
             const internoSeleccionado = String(selectVisor.value).trim();
-            
-            const contenedor = document.getElementById('visor-contenedor'); 
-            const txtVacio = document.getElementById('visor-vacio');
-            const img4 = document.getElementById('visor-img4'); 
-            const imgMenu = document.getElementById('visor-imgMenu'); 
-            const txtSerial = document.getElementById('visor-serial-txt');
+            const contenedor = document.getElementById('visor-contenedor'); const txtVacio = document.getElementById('visor-vacio');
+            const img4 = document.getElementById('visor-img4'); const imgMenu = document.getElementById('visor-imgMenu'); const txtSerial = document.getElementById('visor-serial-txt');
 
             if (!internoSeleccionado) {
-                contenedor.classList.add('hidden');
-                txtVacio.classList.remove('hidden');
-                return;
+                contenedor.classList.add('hidden'); txtVacio.classList.remove('hidden'); return;
             }
 
-            let registro = null;
-            const llaves = Object.keys(bd);
+            let registro = null; const llaves = Object.keys(bd);
             for (let i = 0; i < llaves.length; i++) {
                 if (String(llaves[i]).trim() === internoSeleccionado) {
-                    registro = bd[llaves[i]];
-                    break;
+                    registro = bd[llaves[i]]; break;
                 }
             }
 
             if (registro && registro.estado === 'SI') {
                 txtSerial.textContent = registro.serial || 'Sin número serial'; 
-                img4.src = registro.foto4 || ''; 
-                imgMenu.src = registro.fotoMenu || '';
-                
+                img4.src = registro.foto4 || ''; imgMenu.src = registro.fotoMenu || '';
                 document.getElementById('btn-down-4').style.display = registro.foto4 ? 'inline-block' : 'none';
                 document.getElementById('btn-down-menu').style.display = registro.fotoMenu ? 'inline-block' : 'none';
-                
-                contenedor.classList.remove('hidden'); 
-                txtVacio.classList.add('hidden');
-            } else { 
-                contenedor.classList.add('hidden'); 
-                txtVacio.classList.remove('hidden'); 
-            }
+                contenedor.classList.remove('hidden'); txtVacio.classList.add('hidden');
+            } else { contenedor.classList.add('hidden'); txtVacio.classList.remove('hidden'); }
         }
-
         function abrirFoto(tipo) {
             const selectVisor = document.getElementById('select-visor');
             const internoSeleccionado = String(selectVisor.value).trim();
             if (!internoSeleccionado) return;
 
-            let registro = null;
-            const llaves = Object.keys(bd);
+            let registro = null; const llaves = Object.keys(bd);
             for (let i = 0; i < llaves.length; i++) {
                 if (String(llaves[i]).trim() === internoSeleccionado) {
-                    registro = bd[llaves[i]];
-                    break;
+                    registro = bd[llaves[i]]; break;
                 }
             }
-
             if (registro) {
                 const url = tipo === '4' ? registro.foto4 : registro.fotoMenu; 
                 if (url && url.startsWith('http')) window.open(url, '_blank'); 
             }
         }
+
         function exportarPDF() {
             const internos = Object.keys(bd).sort((a, b) => a.localeCompare(b, undefined, {numeric: true})); if (internos.length === 0) return alert('No hay datos.');
             const cuerpoSi = document.getElementById('tabla-si-cuerpo'); const cuerpoNo = document.getElementById('tabla-no-cuerpo'); cuerpoSi.innerHTML = ''; cuerpoNo.innerHTML = '';
