@@ -107,7 +107,7 @@
                         <button id="btn-down-4" class="btn-download" onclick="abrirFoto('4')">Ver Foto Grande</button>
                     </div>
                     <div>
-                        <span style="font-size:12px; font-weight:bold;">Foto Menú Interno</span>
+                        <span style="font-size:12px; font-weight:bold;">Foto Menu Interno</span>
                         <img id="visor-imgMenu" src="" class="foto-visualizador" alt="Menú Interno">
                         <button id="btn-down-menu" class="btn-download" onclick="abrirFoto('menu')">Ver Foto Grande</button>
                     </div>
@@ -181,22 +181,33 @@
             });
         }
         async function seleccionarLinea(nombreLinea) {
-            lineaActiva = nombreLinea;
+            lineaActiva = String(nombreLinea).trim();
             document.getElementById('linea-activa-txt').textContent = "Cargando Línea " + lineaActiva + "...";
             document.getElementById('pantalla-menu').classList.add('hidden');
             document.getElementById('pantalla-gestion').classList.remove('hidden');
 
             await cargarDatosDesdeNube();
-            bd = baseCompletaNube[lineaActiva] || {};
+            
+            bd = {};
+            if (baseCompletaNube && baseCompletaNube[lineaActiva]) {
+                Object.keys(baseCompletaNube[lineaActiva]).forEach(llaveSheets => {
+                    const claveLimpia = String(llaveSheets).trim().replace(/^0+/, '');
+                    bd[claveLimpia] = baseCompletaNube[lineaActiva][llaveSheets];
+                });
+            }
 
             try {
                 const respuesta = await fetch(`parque/${lineaActiva}.txt`);
                 if (respuesta.ok) {
                     const texto = await respuesta.text();
-                    const internosArchivo = texto.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                    const internosArchivo = texto.split(/\r?\n/)
+                                                 .map(l => String(l.trim()).replace(/^0+/, ''))
+                                                 .filter(Boolean);
+                                                 
                     internosArchivo.forEach(interno => {
-                        if (!bd[interno]) {
-                            bd[interno] = { estado: 'Sin chequear', fecha: '', motivo: '', foto4: '', fotoMenu: '', serial: '' };
+                        const intLimpio = String(interno).trim();
+                        if (intLimpio && !bd[intLimpio]) {
+                            bd[intLimpio] = { estado: 'Sin chequear', fecha: '', motivo: '', foto4: '', fotoMenu: '', serial: '' };
                         }
                     });
                 }
@@ -230,7 +241,6 @@
             document.getElementById('campos-si').classList.toggle('hidden', estado !== 'SI');
             document.getElementById('campos-no').classList.toggle('hidden', estado !== 'NO');
         }
-
         function guardarChequeo() {
             const interno = document.getElementById('select-interno').value;
             const estado = document.getElementById('select-estado').value;
@@ -314,12 +324,12 @@
         function obtenerLinkMiniaturaDrive(urlDrive) {
             if (!urlDrive || !urlDrive.startsWith('http')) return '';
             const match = urlDrive.match(/\/d\/([a-zA-Z0-9_-]+)/) || urlDrive.match(/id=([a-zA-Z0-9_-]+)/);
-            return match ? "https://google.com" + match[1] : urlDrive;
+            return match ? "https://google.com" + match : urlDrive;
         }
 
         function visualizarFotosParticular() {
             const selectVisor = document.getElementById('select-visor');
-            const internoSeleccionado = String(selectVisor.value).trim();
+            const internoSeleccionado = String(selectVisor.value).trim().replace(/^0+/, '');
             const contenedor = document.getElementById('visor-contenedor'); const txtVacio = document.getElementById('visor-vacio');
             const img4 = document.getElementById('visor-img4'); const imgMenu = document.getElementById('visor-imgMenu'); const txtSerial = document.getElementById('visor-serial-txt');
 
@@ -327,7 +337,6 @@
                 contenedor.classList.add('hidden'); txtVacio.classList.remove('hidden'); return;
             }
 
-            // Buscador Inteligente Dual de Tipos (Maneja cadenas de texto y enteros puros del JSONP)
             let registro = bd[internoSeleccionado]; 
             if (!registro && !isNaN(internoSeleccionado)) {
                 registro = bd[Number(internoSeleccionado)];
@@ -335,7 +344,7 @@
             if (!registro) {
                 const llaves = Object.keys(bd);
                 for (let i = 0; i < llaves.length; i++) {
-                    if (String(llaves[i]).trim() === internoSeleccionado) {
+                    if (String(llaves[i]).trim().replace(/^0+/, '') === internoSeleccionado) {
                         registro = bd[llaves[i]]; break;
                     }
                 }
@@ -358,7 +367,7 @@
         }
         function abrirFoto(tipo) {
             const selectVisor = document.getElementById('select-visor');
-            const internoSeleccionado = String(selectVisor.value).trim();
+            const internoSeleccionado = String(selectVisor.value).trim().replace(/^0+/, '');
             if (!internoSeleccionado) return;
 
             let registro = bd[internoSeleccionado];
@@ -366,7 +375,7 @@
             if (!registro) {
                 const llaves = Object.keys(bd);
                 for (let i = 0; i < llaves.length; i++) {
-                    if (String(llaves[i]).trim() === internoSeleccionado) {
+                    if (String(llaves[i]).trim().replace(/^0+/, '') === internoSeleccionado) {
                         registro = bd[llaves[i]]; break;
                     }
                 }
