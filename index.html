@@ -160,25 +160,35 @@
         let bd = {}; 
         let baseCompletaNube = {};
 
-        function cargarDatosDesdeNube() {
-            return new Promise((resolve) => {
-                const nombreCallback = "jsonp_callback_" + Date.now();
-                window[nombreCallback] = function(datos) {
-                    baseCompletaNube = datos;
-                    delete window[nombreCallback];
-                    document.body.removeChild(script);
-                    resolve();
-                };
-                const script = document.createElement("script");
-                script.src = WEB_APP_URL + "?callback=" + nombreCallback + "&_nocache=" + Date.now();
-                script.onerror = function() {
-                    console.error("Error cargando datos por fallas de red externa.");
-                    delete window[nombreCallback];
-                    try { document.body.removeChild(script); } catch(e){}
-                    resolve();
-                };
-                document.body.appendChild(script);
-            });
+        async function cargarDatosDesdeNube() {
+            try {
+                const proxyUrl = "https://herokuapp.com";
+                const urlConProxy = proxyUrl + WEB_APP_URL;
+                const res = await fetch(urlConProxy, {
+                    method: "GET",
+                    headers: { "X-Requested-With": "XMLHttpRequest" }
+                });
+                if (res.ok) {
+                    baseCompletaNube = await res.json();
+                } else {
+                    const espejoProxyUrl = "https://allorigins.win" + encodeURIComponent(WEB_APP_URL);
+                    const resEspejo = await fetch(espejoProxyUrl);
+                    if (resEspejo.ok) {
+                        const jsonEspejo = await resEspejo.json();
+                        baseCompletaNube = JSON.parse(jsonEspejo.contents);
+                    }
+                }
+            } catch(e) { 
+                console.error("Error leyendo de la nube", e);
+                const espejoProxyUrl = "https://allorigins.win" + encodeURIComponent(WEB_APP_URL);
+                try {
+                    const resEspejo = await fetch(espejoProxyUrl);
+                    if (resEspejo.ok) {
+                        const jsonEspejo = await resEspejo.json();
+                        baseCompletaNube = JSON.parse(jsonEspejo.contents);
+                    }
+                } catch(err) { console.error("Fallo total de proxies", err); }
+            }
         }
         async function seleccionarLinea(nombreLinea) {
             lineaActiva = String(nombreLinea).trim();
@@ -241,6 +251,7 @@
             document.getElementById('campos-si').classList.toggle('hidden', estado !== 'SI');
             document.getElementById('campos-no').classList.toggle('hidden', estado !== 'NO');
         }
+
         function guardarChequeo() {
             const interno = document.getElementById('select-interno').value;
             const estado = document.getElementById('select-estado').value;
@@ -326,7 +337,6 @@
             const match = urlDrive.match(/\/d\/([a-zA-Z0-9_-]+)/) || urlDrive.match(/id=([a-zA-Z0-9_-]+)/);
             return match ? "https://google.com" + match : urlDrive;
         }
-
         function visualizarFotosParticular() {
             const selectVisor = document.getElementById('select-visor');
             const internoSeleccionado = String(selectVisor.value).trim().replace(/^0+/, '');
@@ -408,7 +418,7 @@
                 }
             });
             if (!hayOperativos) cuerpoSi.innerHTML = '<tr><td colspan="4" style="text-align:center;">No hay colectivos operativos</td></tr>';
-            if (!hayFallas) cuerpoNo.innerHTML = '<tr><td colspan="3" style="text-align:center;">No se registraron fallas</td></tr>';
+            if (!hayFallas) cuerpoNo.innerHTML = '<tr><td colspan="3" style="text-align:center;">No se registraron fallas</td> erradas</td></tr>';
             window.print();
         }
     </script>
