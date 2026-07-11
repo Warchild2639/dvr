@@ -154,8 +154,7 @@
         </div>
     </div>
     <script>
-        // PEGA ACÁ TU URL LARGA DE GOOGLE APPS SCRIPT QUE TERMINA EN /exec
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyCFOGNDwgHTdxQFA9D6s1CLgtdg70jG-GkjMXBrYoYLbJscDFQ96d8mvik2k8tpxWE/exec";
+        const WEB_APP_URL = "https://google.com";
 
         let lineaActiva = "";
         let bd = {}; 
@@ -169,7 +168,6 @@
                 }
             } catch(e) { console.error("Error leyendo de la nube", e); }
         }
-
         async function seleccionarLinea(nombreLinea) {
             lineaActiva = nombreLinea;
             
@@ -203,7 +201,6 @@
             document.getElementById('pantalla-gestion').classList.add('hidden');
             document.getElementById('pantalla-menu').classList.remove('hidden');
         }
-
         function actualizarSelects() {
             const selectForm = document.getElementById('select-interno');
             const selectVisor = document.getElementById('select-visor');
@@ -237,7 +234,6 @@
 
             const enviarAServidorGoogle = async () => {
                 try {
-                    // Cambiamos a 'no-cors' y formato de texto plano para evitar la validación estricta OPTIONS que causa el 405
                     await fetch(WEB_APP_URL, { 
                         method: "POST", 
                         mode: "no-cors",
@@ -247,7 +243,6 @@
                     
                     alert('¡Chequeo enviado exitosamente a la nube!');
                     
-                    // Esperamos 2.5 segundos a que Google guarde todo antes de refrescar la pantalla
                     setTimeout(async () => {
                         await seleccionarLinea(lineaActiva);
                         btn.disabled = false;
@@ -262,8 +257,8 @@
             };
 
             if (estado === 'SI') {
-                const file4 = document.getElementById('input-foto4').files[0];
-                const fileMenu = document.getElementById('input-fotoMenu').files[0];
+                const file4 = document.getElementById('input-foto4').files;
+                const fileMenu = document.getElementById('input-fotoMenu').files;
                 paquete.serial = document.getElementById('txt-serial').value.trim();
 
                 if (file4 && fileMenu) {
@@ -293,9 +288,6 @@
                 enviarAServidorGoogle();
             }
         }
-
-
-
         function calcularAntiguos() {
             const lista = document.getElementById('lista-antiguos'); if (!lista) return; lista.innerHTML = '';
             const arreglados = Object.keys(bd).map(interno => ({ interno: interno, ...bd[interno], timestamp: bd[interno].fecha ? parseFecha(bd[interno].fecha) : 0 }));
@@ -306,32 +298,85 @@
             });
         }
 
-        function parseFecha(str) { try { const [f, h] = str.split(' '); const [d, m, a] = f.split('/'); return new Date(`${a}-${m}-${d}T${h}`).getTime(); } catch(e) { return 0; } }
-
+        function parseFecha(str) { 
+            try { 
+                if (!str) return 0;
+                if (str.includes('/')) {
+                    const [f, h] = str.split(' '); 
+                    const [d, m, a] = f.split('/'); 
+                    return new Date(`${a}-${m}-${d}T${h}`).getTime(); 
+                }
+                const parsed = Date.parse(str);
+                return isNaN(parsed) ? 0 : parsed;
+            } catch(e) { return 0; } 
+        }
         function visualizarFotosParticular() {
-            const interno = document.getElementById('select-visor').value; const contenedor = document.getElementById('visor-contenedor'); const txtVacio = document.getElementById('visor-vacio');
-            const img4 = document.getElementById('visor-img4'); const imgMenu = document.getElementById('visor-imgMenu'); const txtSerial = document.getElementById('visor-serial-txt');
-            if (interno && bd[interno] && bd[interno].estado === 'SI') {
-                txtSerial.textContent = bd[interno].serial || 'Sin número serial'; 
-                img4.src = bd[interno].foto4 || ''; imgMenu.src = bd[interno].fotoMenu || '';
-                document.getElementById('btn-down-4').style.display = bd[interno].foto4 ? 'inline-block' : 'none';
-                document.getElementById('btn-down-menu').style.display = bd[interno].fotoMenu ? 'inline-block' : 'none';
-                contenedor.classList.remove('hidden'); txtVacio.classList.add('hidden');
-            } else { contenedor.classList.add('hidden'); txtVacio.classList.remove('hidden'); }
+            const selectVisor = document.getElementById('select-visor');
+            const internoSeleccionado = String(selectVisor.value).trim();
+            
+            const contenedor = document.getElementById('visor-contenedor'); 
+            const txtVacio = document.getElementById('visor-vacio');
+            const img4 = document.getElementById('visor-img4'); 
+            const imgMenu = document.getElementById('visor-imgMenu'); 
+            const txtSerial = document.getElementById('visor-serial-txt');
+
+            if (!internoSeleccionado) {
+                contenedor.classList.add('hidden');
+                txtVacio.classList.remove('hidden');
+                return;
+            }
+
+            let registro = null;
+            const llaves = Object.keys(bd);
+            for (let i = 0; i < llaves.length; i++) {
+                if (String(llaves[i]).trim() === internoSeleccionado) {
+                    registro = bd[llaves[i]];
+                    break;
+                }
+            }
+
+            if (registro && registro.estado === 'SI') {
+                txtSerial.textContent = registro.serial || 'Sin número serial'; 
+                img4.src = registro.foto4 || ''; 
+                imgMenu.src = registro.fotoMenu || '';
+                
+                document.getElementById('btn-down-4').style.display = registro.foto4 ? 'inline-block' : 'none';
+                document.getElementById('btn-down-menu').style.display = registro.fotoMenu ? 'inline-block' : 'none';
+                
+                contenedor.classList.remove('hidden'); 
+                txtVacio.classList.add('hidden');
+            } else { 
+                contenedor.classList.add('hidden'); 
+                txtVacio.classList.remove('hidden'); 
+            }
         }
 
         function abrirFoto(tipo) {
-            const interno = document.getElementById('select-visor').value; if (!interno) return;
-            const url = tipo === '4' ? bd[interno].foto4 : bd[interno].fotoMenu; 
-            if (url) window.open(url, '_blank'); 
-        }
+            const selectVisor = document.getElementById('select-visor');
+            const internoSeleccionado = String(selectVisor.value).trim();
+            if (!internoSeleccionado) return;
 
+            let registro = null;
+            const llaves = Object.keys(bd);
+            for (let i = 0; i < llaves.length; i++) {
+                if (String(llaves[i]).trim() === internoSeleccionado) {
+                    registro = bd[llaves[i]];
+                    break;
+                }
+            }
+
+            if (registro) {
+                const url = tipo === '4' ? registro.foto4 : registro.fotoMenu; 
+                if (url && url.startsWith('http')) window.open(url, '_blank'); 
+            }
+        }
         function exportarPDF() {
             const internos = Object.keys(bd).sort((a, b) => a.localeCompare(b, undefined, {numeric: true})); if (internos.length === 0) return alert('No hay datos.');
             const cuerpoSi = document.getElementById('tabla-si-cuerpo'); const cuerpoNo = document.getElementById('tabla-no-cuerpo'); cuerpoSi.innerHTML = ''; cuerpoNo.innerHTML = '';
             document.getElementById('print-titulo').textContent = `Reporte de Control - Línea ${lineaActiva}`;
             document.getElementById('fecha-reporte').textContent = 'Reporte emitido el: ' + new Date().toLocaleString('es-AR');
             let hayOperativos = false; let hayFallas = false;
+            
             internos.forEach(interno => {
                 const item = bd[interno]; if (item.estado === 'Sin chequear') return; const tr = document.createElement('tr');
                 if (item.estado === 'SI') {
