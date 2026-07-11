@@ -154,7 +154,7 @@
         </div>
     </div>
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyCFOGNDwgHTdxQFA9D6s1CLgtdg70jG-GkjMXBrYoYLbJscDFQ96d8mvik2k8tpxWE/exec";
+        const WEB_APP_URL = "https://google.com";
 
         let lineaActiva = "";
         let bd = {}; 
@@ -180,7 +180,6 @@
                 document.body.appendChild(script);
             });
         }
-
         async function seleccionarLinea(nombreLinea) {
             lineaActiva = nombreLinea;
             document.getElementById('linea-activa-txt').textContent = "Cargando Línea " + lineaActiva + "...";
@@ -238,8 +237,7 @@
             if (!interno || !estado) return alert('Por favor, seleccione interno y estado.');
             
             const btn = document.getElementById('btn-guardar');
-            btn.disabled = true;
-            btn.textContent = "⏳ Subiendo a la Nube...";
+            btn.disabled = true; btn.textContent = "⏳ Subiendo a la Nube...";
 
             const ahora = new Date(); 
             const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
@@ -256,8 +254,7 @@
                     alert('¡Chequeo enviado exitosamente a la nube!');
                     setTimeout(async () => {
                         await seleccionarLinea(lineaActiva);
-                        btn.disabled = false;
-                        btn.textContent = "Guardar Chequeo";
+                        btn.disabled = false; btn.textContent = "Guardar Chequeo";
                     }, 2500);
                 } catch(err) { 
                     alert('Error de red al intentar conectar con Google.'); 
@@ -314,65 +311,22 @@
             } catch(e) { return 0; } 
         }
 
-                function visualizarFotosParticular() {
+        // Nueva función global optimizada: Genera links de miniaturas nativos que el navegador lee sin dar error de carga
+        function obtenerLinkMiniaturaDrive(urlDrive) {
+            if (!urlDrive || !urlDrive.startsWith('http')) return '';
+            const match = urlDrive.match(/\/d\/([a-zA-Z0-9_-]+)/) || urlDrive.match(/id=([a-zA-Z0-9_-]+)/);
+            return match ? "https://google.com" + match[1] : urlDrive;
+        }
+
+        function visualizarFotosParticular() {
             const selectVisor = document.getElementById('select-visor');
             const internoSeleccionado = String(selectVisor.value).trim();
-            const contenedor = document.getElementById('visor-contenedor'); 
-            const txtVacio = document.getElementById('visor-vacio');
-            const img4 = document.getElementById('visor-img4'); 
-            const imgMenu = document.getElementById('visor-imgMenu'); 
-            const txtSerial = document.getElementById('visor-serial-txt');
+            const contenedor = document.getElementById('visor-contenedor'); const txtVacio = document.getElementById('visor-vacio');
+            const img4 = document.getElementById('visor-img4'); const imgMenu = document.getElementById('visor-imgMenu'); const txtSerial = document.getElementById('visor-serial-txt');
 
             if (!internoSeleccionado) {
-                contenedor.classList.add('hidden'); 
-                txtVacio.classList.remove('hidden'); 
-                return;
+                contenedor.classList.add('hidden'); txtVacio.classList.remove('hidden'); return;
             }
-
-            let registro = null; 
-            const llaves = Object.keys(bd);
-            for (let i = 0; i < llaves.length; i++) {
-                if (String(llaves[i]).trim() === internoSeleccionado) {
-                    registro = bd[llaves[i]]; 
-                    break;
-                }
-            }
-
-            // FUNCIÓN INTERNA: Convierte el link de Drive en un enlace apto para miniatura (Tag <img>)
-            function convertirLinkDriveAMiniatura(urlDrive) {
-                if (!urlDrive || !urlDrive.startsWith('http')) return '';
-                try {
-                    // Extrae el ID único del archivo de Drive usando expresiones regulares
-                    const match = urlDrive.match(/\/d\/([a-zA-Z0-9_-]+)/) || urlDrive.match(/id=([a-zA-Z0-9_-]+)/);
-                    if (match && match[1]) {
-                        // Retorna el formato de miniaturas nativo de Google Drive (Rápido y liviano)
-                        return "https://google.com" + match[1];
-                    }
-                } catch(e) { console.error("Error al convertir link", e); }
-                return urlDrive;
-            }
-
-            if (registro && registro.estado === 'SI') {
-                txtSerial.textContent = registro.serial || 'Sin número serial'; 
-                
-                // Convertimos y asignamos los links reales a las etiquetas img
-                img4.src = convertirLinkDriveAMiniatura(registro.foto4); 
-                imgMenu.src = convertirLinkDriveAMiniatura(registro.fotoMenu);
-                
-                // Controlamos que no muestre imágenes rotas si no hay link guardado
-                img4.style.display = registro.foto4 ? 'block' : 'none';
-                imgMenu.style.display = registro.fotoMenu ? 'block' : 'none';
-                
-                document.getElementById('btn-down-4').style.display = registro.foto4 ? 'inline-block' : 'none';
-                document.getElementById('btn-down-menu').style.display = registro.fotoMenu ? 'inline-block' : 'none';
-                
-                contenedor.classList.remove('hidden'); 
-                txtVacio.classList.add('hidden');
-            } else { 
-                contenedor.classList.add('hidden'); 
-                txtVacio.classList.remove('hidden'); 
-            }
-        }
 
             let registro = null; const llaves = Object.keys(bd);
             for (let i = 0; i < llaves.length; i++) {
@@ -383,7 +337,13 @@
 
             if (registro && registro.estado === 'SI') {
                 txtSerial.textContent = registro.serial || 'Sin número serial'; 
-                img4.src = registro.foto4 || ''; imgMenu.src = registro.fotoMenu || '';
+                
+                // Muestra la miniatura convirtiendo el enlace sobre la marcha
+                img4.src = obtenerLinkMiniaturaDrive(registro.foto4); 
+                imgMenu.src = obtenerLinkMiniaturaDrive(registro.fotoMenu);
+                
+                img4.style.display = registro.foto4 ? 'block' : 'none';
+                imgMenu.style.display = registro.fotoMenu ? 'block' : 'none';
                 document.getElementById('btn-down-4').style.display = registro.foto4 ? 'inline-block' : 'none';
                 document.getElementById('btn-down-menu').style.display = registro.fotoMenu ? 'inline-block' : 'none';
                 contenedor.classList.remove('hidden'); txtVacio.classList.add('hidden');
@@ -417,8 +377,8 @@
                 const item = bd[interno]; if (item.estado === 'Sin chequear') return; const tr = document.createElement('tr');
                 if (item.estado === 'SI') {
                     hayOperativos = true;
-                    const f4Html = item.foto4 ? `<img src="${item.foto4}" class="print-thumb">` : '<span>Sin foto 4P</span>';
-                    const fMenuHtml = item.fotoMenu ? `<img src="${item.fotoMenu}" class="print-thumb">` : '<span>Sin foto Menú</span>';
+                    const f4Html = item.foto4 ? `<img src="${obtenerLinkMiniaturaDrive(item.foto4)}" class="print-thumb">` : '<span>Sin foto 4P</span>';
+                    const fMenuHtml = item.fotoMenu ? `<img src="${obtenerLinkMiniaturaDrive(item.fotoMenu)}" class="print-thumb">` : '<span>Sin foto Menú</span>';
                     tr.innerHTML = `<td><b>Interno ${interno}</b></td><td>${item.fecha}</td><td>${item.serial || '-'}</td><td><div class="print-flex-thumbs">${f4Html}${fMenuHtml}</div></td>`;
                     cuerpoSi.appendChild(tr);
                 } else if (item.estado === 'NO') {
