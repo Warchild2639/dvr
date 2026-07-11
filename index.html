@@ -314,15 +314,65 @@
             } catch(e) { return 0; } 
         }
 
-        function visualizarFotosParticular() {
+                function visualizarFotosParticular() {
             const selectVisor = document.getElementById('select-visor');
             const internoSeleccionado = String(selectVisor.value).trim();
-            const contenedor = document.getElementById('visor-contenedor'); const txtVacio = document.getElementById('visor-vacio');
-            const img4 = document.getElementById('visor-img4'); const imgMenu = document.getElementById('visor-imgMenu'); const txtSerial = document.getElementById('visor-serial-txt');
+            const contenedor = document.getElementById('visor-contenedor'); 
+            const txtVacio = document.getElementById('visor-vacio');
+            const img4 = document.getElementById('visor-img4'); 
+            const imgMenu = document.getElementById('visor-imgMenu'); 
+            const txtSerial = document.getElementById('visor-serial-txt');
 
             if (!internoSeleccionado) {
-                contenedor.classList.add('hidden'); txtVacio.classList.remove('hidden'); return;
+                contenedor.classList.add('hidden'); 
+                txtVacio.classList.remove('hidden'); 
+                return;
             }
+
+            let registro = null; 
+            const llaves = Object.keys(bd);
+            for (let i = 0; i < llaves.length; i++) {
+                if (String(llaves[i]).trim() === internoSeleccionado) {
+                    registro = bd[llaves[i]]; 
+                    break;
+                }
+            }
+
+            // FUNCIÓN INTERNA: Convierte el link de Drive en un enlace apto para miniatura (Tag <img>)
+            function convertirLinkDriveAMiniatura(urlDrive) {
+                if (!urlDrive || !urlDrive.startsWith('http')) return '';
+                try {
+                    // Extrae el ID único del archivo de Drive usando expresiones regulares
+                    const match = urlDrive.match(/\/d\/([a-zA-Z0-9_-]+)/) || urlDrive.match(/id=([a-zA-Z0-9_-]+)/);
+                    if (match && match[1]) {
+                        // Retorna el formato de miniaturas nativo de Google Drive (Rápido y liviano)
+                        return "https://google.com" + match[1];
+                    }
+                } catch(e) { console.error("Error al convertir link", e); }
+                return urlDrive;
+            }
+
+            if (registro && registro.estado === 'SI') {
+                txtSerial.textContent = registro.serial || 'Sin número serial'; 
+                
+                // Convertimos y asignamos los links reales a las etiquetas img
+                img4.src = convertirLinkDriveAMiniatura(registro.foto4); 
+                imgMenu.src = convertirLinkDriveAMiniatura(registro.fotoMenu);
+                
+                // Controlamos que no muestre imágenes rotas si no hay link guardado
+                img4.style.display = registro.foto4 ? 'block' : 'none';
+                imgMenu.style.display = registro.fotoMenu ? 'block' : 'none';
+                
+                document.getElementById('btn-down-4').style.display = registro.foto4 ? 'inline-block' : 'none';
+                document.getElementById('btn-down-menu').style.display = registro.fotoMenu ? 'inline-block' : 'none';
+                
+                contenedor.classList.remove('hidden'); 
+                txtVacio.classList.add('hidden');
+            } else { 
+                contenedor.classList.add('hidden'); 
+                txtVacio.classList.remove('hidden'); 
+            }
+        }
 
             let registro = null; const llaves = Object.keys(bd);
             for (let i = 0; i < llaves.length; i++) {
