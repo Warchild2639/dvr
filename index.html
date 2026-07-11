@@ -308,22 +308,50 @@
             } catch(e) { return 0; } 
         }
 
-        function visualizarFotosParticular() {
+                function visualizarFotosParticular() {
             const selectVisor = document.getElementById('select-visor');
-            const internoSeleccionado = String(selectVisor.value).trim();
-            const contenedor = document.getElementById('visor-contenedor'); const txtVacio = document.getElementById('visor-vacio');
-            const img4 = document.getElementById('visor-img4'); const imgMenu = document.getElementById('visor-imgMenu'); const txtSerial = document.getElementById('visor-serial-txt');
+            const internoSeleccionado = String(selectVisor.value).trim().replace(/^0+/, '');
+            
+            const contenedor = document.getElementById('visor-contenedor'); 
+            const txtVacio = document.getElementById('visor-vacio');
+            const txtSerial = document.getElementById('visor-serial-txt');
 
             if (!internoSeleccionado) {
-                contenedor.classList.add('hidden'); txtVacio.classList.remove('hidden'); return;
+                contenedor.classList.add('hidden'); 
+                txtVacio.classList.remove('hidden'); 
+                return;
             }
 
-            let registro = null; const llaves = Object.keys(bd);
-            for (let i = 0; i < llaves.length; i++) {
-                if (String(llaves[i]).trim() === internoSeleccionado) {
-                    registro = bd[llaves[i]]; break;
+            // Buscador robusto compatible con texto y número puro
+            let registro = bd[internoSeleccionado]; 
+            if (!registro && !isNaN(internoSeleccionado)) {
+                registro = bd[Number(internoSeleccionado)];
+            }
+            if (!registro) {
+                const llaves = Object.keys(bd);
+                for (let i = 0; i < llaves.length; i++) {
+                    if (String(llaves[i]).trim().replace(/^0+/, '') === internoSeleccionado) {
+                        registro = bd[llaves[i]]; break;
+                    }
                 }
             }
+
+            // Si el interno posee registros válidos en la base de datos
+            if (registro && (registro.estado === 'SI' || registro.estado === 'NO')) {
+                txtSerial.textContent = registro.serial || 'Sin número serial'; 
+                
+                // Mostramos u ocultamos los botones de forma independiente según existan los links
+                document.getElementById('btn-down-4').style.display = (registro.foto4 && registro.foto4.startsWith('http')) ? 'block' : 'none';
+                document.getElementById('btn-down-menu').style.display = (registro.fotoMenu && registro.fotoMenu.startsWith('http')) ? 'block' : 'none';
+                
+                contenedor.classList.remove('hidden'); 
+                txtVacio.classList.add('hidden');
+            } else { 
+                contenedor.classList.add('hidden'); 
+                txtVacio.classList.remove('hidden'); 
+            }
+        }
+
 
             if (registro && registro.estado === 'SI') {
                 txtSerial.textContent = registro.serial || 'Sin número serial'; 
