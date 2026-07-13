@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control de Dispositivos - Colectivos</title>
-    <!-- Librería OCR para leer el texto de la foto del chip automáticamente -->
-    <script src="https://jsdelivr.net"></script>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 650px; margin: 20px auto; padding: 0 15px; background: #f4f7f6; color: #333; }
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 0 15px; background: #f4f7f6; color: #333; }
         h1, h2, h3 { text-align: center; color: #0056b3; }
         .section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
         label { display: block; margin: 10px 0 5px; font-weight: bold; }
@@ -22,6 +20,7 @@
         ul { list-style: none; padding: 0; }
         li { background: #eee; margin: 5px 0; padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; font-size: 14px; align-items: center; }
         
+        /* CONTADORES RÁPIDOS */
         .grid-indicadores { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
         .card-ind { text-align: center; padding: 12px; border-radius: 6px; color: white; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .ind-si { background: #28a745; }
@@ -29,13 +28,12 @@
         .ind-sin { background: #ffc107; color: #212529; }
         .card-ind span { display: block; font-size: 24px; font-weight: 1000; margin-top: 5px; }
 
+        /* CUADRICULA PARA LAS 5 FOTOS */
         .foto-container { text-align: center; margin-top: 10px; background: #fafafa; padding: 15px; border: 1px dashed #bbb; border-radius: 4px; }
         .grid-5-fotos { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-top: 10px; }
         .bloque-foto-visor { background: #fff; padding: 8px; border: 1px solid #ddd; border-radius: 4px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
         .foto-visualizador { width: 100%; height: 90px; border-radius: 4px; object-fit: cover; display: block; margin: 5px auto; background: #eaeaea; }
         .txt-titulo-foto { font-size: 11px; font-weight: bold; color: #555; text-transform: uppercase; }
-
-        .loading-ocr { font-size: 14px; color: #856404; background-color: #fff3cd; border: 1px solid #ffeeba; padding: 10px; border-radius: 4px; margin-bottom: 10px; text-align: center; font-weight: bold; }
 
         .linea-btn { margin-bottom: 12px; font-size: 18px; padding: 15px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
         .verde-claro { background: #4cbd5c !important; }
@@ -111,10 +109,8 @@
                 <label for="input-fotoSerial">Foto del Serial:</label>
                 <input type="file" id="input-fotoSerial" accept="image/*">
 
-                <label for="input-fotoChip" style="color: #0056b3;">Foto del Chip (Escáner de Serial Inteligente):</label>
-                <input type="file" id="input-fotoChip" accept="image/*" onchange="escanearFotoChipSerial(this)">
-                
-                <div id="status-ocr" class="loading-ocr hidden">⏳ IA Procesando Foto del Chip... Escaneando renglón de "SN"...</div>
+                <label for="input-fotoChip">Foto del Chip:</label>
+                <input type="file" id="input-fotoChip" accept="image/*">
 
                 <label for="input-fotoPaper">Foto del Registro:</label>
                 <input type="file" id="input-fotoPaper" accept="image/*">
@@ -122,8 +118,8 @@
                 <label for="input-foto4P">Foto de las 4 Pantallas:</label>
                 <input type="file" id="input-foto4P" accept="image/*">
 
-                <label for="txt-serial">Número Serial DVR Extraído:</label>
-                <input type="text" id="txt-serial" placeholder="El número se cargará solo al subir la foto del chip o escríbalo...">
+                <label for="txt-serial">Número Serial DVR:</label>
+                <input type="text" id="txt-serial" placeholder="Escriba el número serial aquí...">
             </div>
             <div id="campos-no" class="hidden">
                 <label for="txt-motivo">Motivo de la falla:</label>
@@ -223,61 +219,9 @@
         function formatearLinkMiniatura(urlDrive) {
             if (!urlDrive || (urlDrive.indexOf("id=") === -1 && urlDrive.indexOf("/d/") === -1)) return urlDrive;
             let id = "";
-            if (urlDrive.indexOf("id=") !== -1) { id = urlDrive.split("id=").split("&")[0]; } 
+            if (urlDrive.indexOf("id=") !== -1) { id = urlDrive.split("id=")[1].split("&")[0]; } 
             else { id = urlDrive.split("/d/")[1].split("/")[0]; }
             return `https://google.com{id}`;
-        }
-
-        // REDUCTOR AUTOMÁTICO DE IMÁGENES: Achica la foto antes de pasársela a la IA para evitar cuelgues
-        function escanearFotoChipSerial(input) {
-            const file = input.files[0];
-            if (!file) return;
-
-            const cartel = document.getElementById('status-ocr');
-            cartel.classList.remove('hidden');
-
-            const lector = new FileReader();
-            lector.onload = function(e) {
-                const imgTemp = new Image();
-                imgTemp.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    
-                    // Escalamos la imagen a un ancho máximo de 800px para que el OCR trabaje liviano
-                    const maxAncho = 800;
-                    const escala = maxAncho / imgTemp.width;
-                    canvas.width = maxAncho;
-                    canvas.height = imgTemp.height * escala;
-                    
-                    ctx.drawImage(imgTemp, 0, 0, canvas.width, canvas.height);
-                    
-                    // Obtenemos la imagen optimizada y se la enviamos al motor de IA
-                    const imagenOptimizada = canvas.toDataURL('image/jpeg', 0.85);
-                    
-                    Tesseract.recognize(imagenOptimizada, 'eng+spa')
-                        .then(({ data: { text } }) => {
-                            console.log("Texto extraído por la IA:", text);
-                            // Busca el patrón exacto: Un número inicial seguido de una F mayúscula y caracteres
-                            const patronSerial = /\b\d[Ff][A-Z0-9]{5,25}\b/g;
-                            const coincidencias = text.match(patronSerial);
-                            if (coincidencias && coincidencias.length > 0) {
-                                const serialDetectado = coincidencias.reduce((a, b) => a.length > b.length ? a : b);
-                                document.getElementById('txt-serial').value = serialDetectado.toUpperCase();
-                            } else {
-                                // Opción de respaldo: si falló el primer caracter por un reflejo, busca solo la F seguida de texto
-                                const patronSecundario = /\b[Ff][A-Z0-9]{8,25}\b/g;
-                                const coicidenciasSec = text.match(patronSecundario);
-                                if (coicidenciasSec && coicidenciasSec.length > 0) {
-                                    document.getElementById('txt-serial').value = coicidenciasSec[0].toUpperCase();
-                                }
-                            }
-                        })
-                        .catch(err => console.error("Error en procesamiento OCR:", err))
-                        .finally(() => cartel.classList.add('hidden'));
-                };
-                imgTemp.src = e.target.result;
-            };
-            lector.readAsDataURL(file);
         }
 
         async function cargarDatosDesdeNube() {
@@ -332,6 +276,7 @@
             document.getElementById('pantalla-gestion').classList.add('hidden');
             document.getElementById('pantalla-menu').classList.remove('hidden');
         }
+
         function actualizarSelects() {
             const selectForm = document.getElementById('select-interno');
             const selectVisor = document.getElementById('select-visor');
@@ -350,7 +295,6 @@
             document.getElementById('campos-si').classList.toggle('hidden', estado !== 'SI');
             document.getElementById('campos-no').classList.toggle('hidden', estado !== 'NO');
         }
-
         function guardarChequeo() {
             const interno = document.getElementById('select-interno').value;
             const estado = document.getElementById('select-estado').value;
@@ -370,7 +314,7 @@
                         return;
                     }
                     const item = archivosMapeados[p];
-                    btn.textContent = `⏳ Subiendo Imagen ${p + 1} de ${archivosMapeados.length}...`;
+                    btn.textContent = `⏳ Subiendo Imagen ${p + 1} de 5...`;
                     
                     try {
                         await fetch(WEB_APP_URL, {
@@ -378,7 +322,7 @@
                             mode: "no-cors",
                             body: JSON.stringify({ action: 'subirFoto', linea: lineaActiva, interno: interno, tipoFoto: item.tipo, archivoBase64: item.base64 })
                         });
-                    } catch(e) { console.error("Error secuencial de subida", e); }
+                    } catch(e) { console.error("Error de subida", e); }
                     
                     p++;
                     procesarSiguienteFoto();
@@ -401,7 +345,7 @@
                         fetch(WEB_APP_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(paquete) }).then(() => {
                             if (listaFotosBase64.length > 0) { subirFotosEnRafaga(listaFotosBase64); } 
                             else { 
-                                alert('¡Registro guardado sin imagenes!');
+                                alert('¡Registro guardado!');
                                 setTimeout(async () => { await seleccionarLinea(lineaActiva); btn.disabled = false; btn.textContent = "Guardar Chequeo"; }, 1500);
                             }
                         });
@@ -435,6 +379,7 @@
             });
         }
 
+        // Corrección del mapeo para que tome el ID correcto de Drive
         function parseFecha(str) { try { const [f, h] = str.split(' '); const [d, m, a] = f.split('/'); return new Date(`${a}-${m}-${d}T${h}`).getTime(); } catch(e) { return 0; } }
 
         function visualizarFotosParticular() {
@@ -451,4 +396,45 @@
                 fotosMapeo.forEach(item => {
                     const el = document.getElementById(item.id);
                     if (item.src) { el.src = formatearLinkMiniatura(item.src); document.getElementById(item.btn).style.display = 'inline-block'; } 
-                    else { el.src = ''; document.getElementById(item.btn
+                    else { el.src = ''; document.getElementById(item.btn).style.display = 'none'; }
+                });
+                contenedor.classList.remove('hidden'); txtVacio.classList.add('hidden');
+            } else { contenedor.classList.add('hidden'); txtVacio.classList.remove('hidden'); }
+        }
+
+        function abrirFoto(tipo) {
+            const interno = document.getElementById('select-visor').value; if (!interno) return;
+            const campos = { 'frente': 'fFrente', 'serial': 'fSerial', 'chip': 'fChip', 'registro': 'fRegistro', '4p': 'f4P' };
+            const url = bd[interno][campos[tipo]]; if (url) window.open(url, '_blank'); 
+        }
+
+        function exportarPDF() {
+            const internos = Object.keys(bd).sort((a, b) => a.localeCompare(b, undefined, {numeric: true})); if (internos.length === 0) return alert('No hay datos.');
+            const cuerpoSi = document.getElementById('tabla-si-cuerpo'); const cuerpoNo = document.getElementById('tabla-no-cuerpo'); cuerpoSi.innerHTML = ''; cuerpoNo.innerHTML = '';
+            document.getElementById('print-titulo').textContent = `Reporte de Control - Línea ${lineaActiva}`;
+            document.getElementById('fecha-reporte').textContent = 'Reporte emitido el: ' + new Date().toLocaleString('es-AR');
+            let hayOperativos = false; let hayFallas = false;
+            internos.forEach(interno => {
+                const item = bd[interno]; if (item.estado === 'Sin chequear') return; const tr = document.createElement('tr');
+                if (item.estado === 'SI') {
+                    hayOperativos = true;
+                    const armarMiniaturaPDF = (src, lbl) => { return src ? `<div class="print-thumb-container"><img src="${formatearLinkMiniatura(src)}" class="print-thumb"><span class="print-lbl-foto">${lbl}</span></div>` : '<div>-</div>'; };
+                    tr.innerHTML = `<td><b>Int ${interno}</b></td><td>${item.fecha}</td><td>${item.serial || '-'}</td><td><div class="print-flex-thumbs">${armarMiniaturaPDF(item.fFrente, 'Frente')}${armarMiniaturaPDF(item.fSerial, 'Serial')}${armarMiniaturaPDF(item.fChip, 'Chip')}${armarMiniaturaPDF(item.fRegistro, 'Registro')}${armarMiniaturaPDF(item.f4P, '4 Pantallas')}</div></td>`;
+                    cuerpoSi.appendChild(tr);
+                } else if (item.estado === 'NO') {
+                    hayFallas = true;
+                    tr.innerHTML = `<td><b>Interno ${interno}</b></td><td>${item.fecha}</td><td class="badge-no">${item.motivo}</td>`;
+                    cuerpoNo.appendChild(tr);
+                }
+            });
+            if (!hayOperativos) cuerpoSi.innerHTML = '<tr><td colspan="4" style="text-align:center;">No hay colectivos operativos</td></tr>';
+            if (!hayFallas) cuerpoNo.innerHTML = '<tr><td colspan="3" style="text-align:center;">No se registraron fallas</td></tr>';
+            window.print();
+        }
+    </script>
+</body>
+</html>
+
+
+
+
