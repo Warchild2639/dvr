@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control de Dispositivos - Colectivos</title>
+    <!-- Librería OCR para leer el texto de la foto del chip automáticamente -->
+    <script src="https://jsdelivr.net"></script>
     <style>
         body { font-family: Arial, sans-serif; max-width: 650px; margin: 20px auto; padding: 0 15px; background: #f4f7f6; color: #333; }
         h1, h2, h3 { text-align: center; color: #0056b3; }
@@ -20,7 +22,6 @@
         ul { list-style: none; padding: 0; }
         li { background: #eee; margin: 5px 0; padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; font-size: 14px; align-items: center; }
         
-        /* DISEÑO DE CONTADORES RÁPIDOS */
         .grid-indicadores { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
         .card-ind { text-align: center; padding: 12px; border-radius: 6px; color: white; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .ind-si { background: #28a745; }
@@ -28,12 +29,14 @@
         .ind-sin { background: #ffc107; color: #212529; }
         .card-ind span { display: block; font-size: 24px; font-weight: 1000; margin-top: 5px; }
 
-        /* MULTIMEDIA EN CUADRICULA (5 FOTOS) */
         .foto-container { text-align: center; margin-top: 10px; background: #fafafa; padding: 15px; border: 1px dashed #bbb; border-radius: 4px; }
         .grid-5-fotos { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-top: 10px; }
         .bloque-foto-visor { background: #fff; padding: 8px; border: 1px solid #ddd; border-radius: 4px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
         .foto-visualizador { width: 100%; height: 90px; border-radius: 4px; object-fit: cover; display: block; margin: 5px auto; background: #eaeaea; }
         .txt-titulo-foto { font-size: 11px; font-weight: bold; color: #555; text-transform: uppercase; }
+
+        /* AVISO ANIMADO DE LECTURA DE IA */
+        .loading-ocr { font-size: 14px; color: #856404; background-color: #fff3cd; border: 1px solid #ffeeba; padding: 10px; border-radius: 4px; margin-bottom: 10px; text-align: center; font-weight: bold; }
 
         .linea-btn { margin-bottom: 12px; font-size: 18px; padding: 15px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
         .verde-claro { background: #4cbd5c !important; }
@@ -82,7 +85,6 @@
         <button class="btn-volver" onclick="volverAlMenu()">← Cambiar de Línea</button>
         <div><span id="linea-activa-txt" class="lbl-linea-activa">Línea: Ninguna</span></div>
 
-        <!-- INDICADORES RÁPIDOS EN TIEMPO REAL -->
         <div class="grid-indicadores">
             <div class="card-ind ind-si">OPERATIVOS<span id="ind-cant-si">0</span></div>
             <div class="card-ind ind-no">CON FALLA<span id="ind-cant-no">0</span></div>
@@ -103,7 +105,6 @@
                 <option value="NO">NO funciona</option>
             </select>
             
-            <!-- CAMPOS SI FUNCIONA (REFORMA: 5 FOTOS EXPLICITAS) -->
             <div id="campos-si" class="hidden">
                 <label for="input-fotoFrente">Foto del Frente:</label>
                 <input type="file" id="input-fotoFrente" accept="image/*">
@@ -111,8 +112,12 @@
                 <label for="input-fotoSerial">Foto del Serial:</label>
                 <input type="file" id="input-fotoSerial" accept="image/*">
 
-                <label for="input-fotoChip">Foto del Chip:</label>
-                <input type="file" id="input-fotoChip" accept="image/*">
+                <!-- CAMBIO: Al subir la foto del chip se acciona el escáner de IA automático -->
+                <label for="input-fotoChip" style="color: #0056b3;">Foto del Chip (Escáner de Serial Inteligente):</label>
+                <input type="file" id="input-fotoChip" accept="image/*" onchange="escanearFotoChipSerial(this)">
+                
+                <!-- CARTEL EN PANTALLA MIENTRAS TRABAJA LA INTELIGENCIA ARTIFICIAL -->
+                <div id="status-ocr" class="loading-ocr hidden">⏳ IA Procesando Foto del Chip... Escaneando renglón de "SN"...</div>
 
                 <label for="input-fotoRegistro">Foto del Registro:</label>
                 <input type="file" id="input-fotoRegistro" accept="image/*">
@@ -120,8 +125,8 @@
                 <label for="input-foto4P">Foto de las 4 Pantallas:</label>
                 <input type="file" id="input-foto4P" accept="image/*">
 
-                <label for="txt-serial">Número Serial:</label>
-                <input type="text" id="txt-serial" placeholder="Escriba el número serial aquí...">
+                <label for="txt-serial">Número Serial DVR Extraído:</label>
+                <input type="text" id="txt-serial" placeholder="El número se cargará solo al subir la foto del chip o escríbalo...">
             </div>
             <div id="campos-no" class="hidden">
                 <label for="txt-motivo">Motivo de la falla:</label>
@@ -129,7 +134,7 @@
             </div>
             <button id="btn-guardar" onclick="guardarChequeo()" style="margin-top:15px;">Guardar Chequeo</button>
         </div>
-        <!-- 2. VISOR PARTICULAR (REFORMA: 5 MINIATURAS CORREGIDAS) -->
+        <!-- 2. VISOR PARTICULAR -->
         <div class="section">
             <h2>2. Consultar Fotos e Info de Interno</h2>
             <label for="select-visor">Seleccione Interno para consultar:</label>
@@ -179,7 +184,7 @@
         </div>
     </div>
 
-    <!-- DOCUMENTO DE IMPRESIÓN (PDF CON 5 MINIATURAS) -->
+    <!-- DOCUMENTO DE IMPRESIÓN (PDF) -->
     <div id="reporte-impresion">
         <h2 id="print-titulo" style="text-align: center; color: #000; margin-bottom: 5px;">Reporte General de Control de Flota</h2>
         <p id="fecha-reporte" style="text-align: center; font-size: 12px; color: #555; margin-bottom: 25px;"></p>
@@ -212,20 +217,59 @@
         </div>
     </div>
     <script>
-        // PEGA ACÁ TU URL LARGA DE GOOGLE APPS SCRIPT QUE TERMINA EN /exec
-        const WEB_APP_URL = "https://google.com"; // Reemplazar con la tuya real si difiere
+        const WEB_APP_URL = "https://google.com";
 
         let lineaActiva = "";
         let bd = {}; 
         let baseCompletaNube = {};
 
-        // CONVERTIDOR DE ENLACES DE DRIVE PARA QUE SE VEAN LAS IMAGENES EN MINIATURA
         function formatearLinkMiniatura(urlDrive) {
             if (!urlDrive || urlDrive.indexOf("id=") === -1 && urlDrive.indexOf("/d/") === -1) return urlDrive;
             let id = "";
             if (urlDrive.indexOf("id=") !== -1) { id = urlDrive.split("id=")[1].split("&")[0]; } 
             else { id = urlDrive.split("/d/")[1].split("/")[0]; }
             return `https://google.com{id}`;
+        }
+
+        // LÓGICA DE EXTRACCIÓN AUTOMÁTICA DE SERIAL DESDE LA FOTO DEL CHIP
+        function escanearFotoChipSerial(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const cartel = document.getElementById('status-ocr');
+            cartel.classList.remove('hidden');
+
+            const lector = new FileReader();
+            lector.onload = function(e) {
+                // Ejecuta la lectura OCR enfocada en español e inglés
+                Tesseract.recognize(e.target.result, 'eng+spa')
+                    .then(({ data: { text } }) => {
+                        console.log("Texto completo extraído de la foto del chip:", text);
+                        
+                        // REGLA DE BÚSQUEDA (Regex): Busca renglones donde aparezca SN
+                        // Y extrae la cadena larga que empiece con un número y siga con F mayúscula
+                        const patronSerial = /\b\d[Ff][A-Z0-9]{5,25}\b/g;
+                        const coincidencias = text.match(patronSerial);
+
+                        if (coincidencias && coincidencias.length > 0) {
+                            // Toma la cadena encontrada más larga para evitar fragmentos
+                            const serialDetectado = coincidencias.reduce((a, b) => a.length > b.length ? a : b);
+                            document.getElementById('txt-serial').value = serialDetectado.toUpperCase();
+                        } else {
+                            // Búsqueda secundaria en caso de que falte el número inicial por un reflejo
+                            const patronSecundario = /\b[Ff][A-Z0-9]{8,25}\b/g;
+                            const coicidenciasSec = text.match(patronSecundario);
+                            if (coicidenciasSec && coicidenciasSec.length > 0) {
+                                document.getElementById('txt-serial').value = coicidenciasSec[0].toUpperCase();
+                            } else {
+                                console.warn("La IA no pudo aislar el patrón serial (Número + F). Escríbalo manualmente.");
+                            }
+                        }
+                    })
+                    .catch(err => console.error("Falla en el motor de Inteligencia Artificial OCR:", err))
+                    .finally(() => cartel.classList.add('hidden'));
+            };
+            lector.readAsDataURL(file);
         }
 
         async function cargarDatosDesdeNube() {
@@ -263,7 +307,6 @@
             actualizarIndicadoresRapidos();
         }
 
-        // LÓGICA DE CONTADORES EN TIEMPO REAL
         function actualizarIndicadoresRapidos() {
             let si = 0, no = 0, sin = 0;
             Object.keys(bd).forEach(interno => {
@@ -308,7 +351,6 @@
             const btn = document.getElementById('btn-guardar'); btn.disabled = true; btn.textContent = "⏳ Subiendo a la Nube...";
             const ahora = new Date(); const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
             
-            // Estructura expandida para contener las 5 fotos
             const paquete = { linea: lineaActiva, interno: interno, estado: estado, fecha: fechaString, serial: '', fFrente:'', fSerial:'', fChip:'', fRegistro:'', f4P:'', motivo: '' };
 
             const enviarAServidorGoogle = async () => {
@@ -362,7 +404,6 @@
             if (interno && bd[interno] && bd[interno].estado === 'SI') {
                 document.getElementById('visor-serial-txt').textContent = bd[interno].serial || 'Sin número serial';
                 
-                // Mapear y formatear miniaturas con los enlaces convertidos de Google
                 const fotosMapeo = [
                     { id: 'visor-imgFrente', btn: 'btn-down-frente', src: bd[interno].fFrente },
                     { id: 'visor-imgSerial', btn: 'btn-down-serial', src: bd[interno].fSerial },
