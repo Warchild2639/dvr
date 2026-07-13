@@ -223,11 +223,12 @@
         function formatearLinkMiniatura(urlDrive) {
             if (!urlDrive || (urlDrive.indexOf("id=") === -1 && urlDrive.indexOf("/d/") === -1)) return urlDrive;
             let id = "";
-            if (urlDrive.indexOf("id=") !== -1) { id = urlDrive.split("id=")[1].split("&")[0]; } 
+            if (urlDrive.indexOf("id=") !== -1) { id = urlDrive.split("id=").split("&")[0]; } 
             else { id = urlDrive.split("/d/")[1].split("/")[0]; }
             return `https://google.com{id}`;
         }
 
+        // REDUCTOR AUTOMÁTICO DE IMÁGENES: Achica la foto antes de pasársela a la IA para evitar cuelgues
         function escanearFotoChipSerial(input) {
             const file = input.files[0];
             if (!file) return;
@@ -237,23 +238,44 @@
 
             const lector = new FileReader();
             lector.onload = function(e) {
-                Tesseract.recognize(e.target.result, 'eng+spa')
-                    .then(({ data: { text } }) => {
-                        const patronSerial = /\b\d[Ff][A-Z0-9]{5,25}\b/g;
-                        const coincidencias = text.match(patronSerial);
-                        if (coincidencias && coincidencias.length > 0) {
-                            const serialDetectado = coincidencias.reduce((a, b) => a.length > b.length ? a : b);
-                            document.getElementById('txt-serial').value = serialDetectado.toUpperCase();
-                        } else {
-                            const patronSecundario = /\b[Ff][A-Z0-9]{8,25}\b/g;
-                            const coicidenciasSec = text.match(patronSecundario);
-                            if (coicidenciasSec && coicidenciasSec.length > 0) {
-                                document.getElementById('txt-serial').value = coicidenciasSec[0].toUpperCase();
+                const imgTemp = new Image();
+                imgTemp.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Escalamos la imagen a un ancho máximo de 800px para que el OCR trabaje liviano
+                    const maxAncho = 800;
+                    const escala = maxAncho / imgTemp.width;
+                    canvas.width = maxAncho;
+                    canvas.height = imgTemp.height * escala;
+                    
+                    ctx.drawImage(imgTemp, 0, 0, canvas.width, canvas.height);
+                    
+                    // Obtenemos la imagen optimizada y se la enviamos al motor de IA
+                    const imagenOptimizada = canvas.toDataURL('image/jpeg', 0.85);
+                    
+                    Tesseract.recognize(imagenOptimizada, 'eng+spa')
+                        .then(({ data: { text } }) => {
+                            console.log("Texto extraído por la IA:", text);
+                            // Busca el patrón exacto: Un número inicial seguido de una F mayúscula y caracteres
+                            const patronSerial = /\b\d[Ff][A-Z0-9]{5,25}\b/g;
+                            const coincidencias = text.match(patronSerial);
+                            if (coincidencias && coincidencias.length > 0) {
+                                const serialDetectado = coincidencias.reduce((a, b) => a.length > b.length ? a : b);
+                                document.getElementById('txt-serial').value = serialDetectado.toUpperCase();
+                            } else {
+                                // Opción de respaldo: si falló el primer caracter por un reflejo, busca solo la F seguida de texto
+                                const patronSecundario = /\b[Ff][A-Z0-9]{8,25}\b/g;
+                                const coicidenciasSec = text.match(patronSecundario);
+                                if (coicidenciasSec && coicidenciasSec.length > 0) {
+                                    document.getElementById('txt-serial').value = coicidenciasSec[0].toUpperCase();
+                                }
                             }
-                        }
-                    })
-                    .catch(err => console.error("Falla en OCR:", err))
-                    .finally(() => cartel.classList.add('hidden'));
+                        })
+                        .catch(err => console.error("Error en procesamiento OCR:", err))
+                        .finally(() => cartel.classList.add('hidden'));
+                };
+                imgTemp.src = e.target.result;
             };
             lector.readAsDataURL(file);
         }
@@ -310,7 +332,6 @@
             document.getElementById('pantalla-gestion').classList.add('hidden');
             document.getElementById('pantalla-menu').classList.remove('hidden');
         }
-
         function actualizarSelects() {
             const selectForm = document.getElementById('select-interno');
             const selectVisor = document.getElementById('select-visor');
@@ -329,7 +350,7 @@
             document.getElementById('campos-si').classList.toggle('hidden', estado !== 'SI');
             document.getElementById('campos-no').classList.toggle('hidden', estado !== 'NO');
         }
-        // REFORMA OPTIMIZADA: Envía los datos textuales primero y las imágenes de forma individual por ráfagas
+
         function guardarChequeo() {
             const interno = document.getElementById('select-interno').value;
             const estado = document.getElementById('select-estado').value;
@@ -338,7 +359,6 @@
             const btn = document.getElementById('btn-guardar'); btn.disabled = true; btn.textContent = "⏳ Guardando Registro...";
             const ahora = new Date(); const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
             
-            // Paquete base ultra liviano (Sin fotos adjuntas)
             const paquete = { action: 'registroBase', linea: lineaActiva, interno: interno, estado: estado, fecha: fechaString, serial: '', motivo: '' };
 
             const subirFotosEnRafaga = (archivosMapeados) => {
@@ -350,7 +370,7 @@
                         return;
                     }
                     const item = archivosMapeados[p];
-                    btn.textContent = `⏳ Subiendo Imagen ${p + 1} de 5...`;
+                    btn.textContent = `⏳ Subiendo Imagen ${p + 1} de ${archivosMapeados.length}...`;
                     
                     try {
                         await fetch(WEB_APP_URL, {
@@ -378,10 +398,12 @@
                 const listaFotosBase64 = [];
                 const convertirInputsABase64 = () => {
                     if (i >= inputs.length) {
-                        // Primero disparamos el guardado de la fila base en Sheets
                         fetch(WEB_APP_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(paquete) }).then(() => {
                             if (listaFotosBase64.length > 0) { subirFotosEnRafaga(listaFotosBase64); } 
-                            else { enviarAServidorGoogle(); }
+                            else { 
+                                alert('¡Registro guardado sin imagenes!');
+                                setTimeout(async () => { await seleccionarLinea(lineaActiva); btn.disabled = false; btn.textContent = "Guardar Chequeo"; }, 1500);
+                            }
                         });
                         return;
                     }
@@ -429,41 +451,4 @@
                 fotosMapeo.forEach(item => {
                     const el = document.getElementById(item.id);
                     if (item.src) { el.src = formatearLinkMiniatura(item.src); document.getElementById(item.btn).style.display = 'inline-block'; } 
-                    else { el.src = ''; document.getElementById(item.btn).style.display = 'none'; }
-                });
-                contenedor.classList.remove('hidden'); txtVacio.classList.add('hidden');
-            } else { contenedor.classList.add('hidden'); txtVacio.classList.remove('hidden'); }
-        }
-
-        function abrirFoto(tipo) {
-            const interno = document.getElementById('select-visor').value; if (!interno) return;
-            const campos = { 'frente': 'fFrente', 'serial': 'fSerial', 'chip': 'fChip', 'registro': 'fRegistro', '4p': 'f4P' };
-            const url = bd[interno][campos[tipo]]; if (url) window.open(url, '_blank'); 
-        }
-
-        function exportarPDF() {
-            const internos = Object.keys(bd).sort((a, b) => a.localeCompare(b, undefined, {numeric: true})); if (internos.length === 0) return alert('No hay datos.');
-            const cuerpoSi = document.getElementById('tabla-si-cuerpo'); const cuerpoNo = document.getElementById('tabla-no-cuerpo'); cuerpoSi.innerHTML = ''; cuerpoNo.innerHTML = '';
-            document.getElementById('print-titulo').textContent = `Reporte de Control - Línea ${lineaActiva}`;
-            document.getElementById('fecha-reporte').textContent = 'Reporte emitido el: ' + new Date().toLocaleString('es-AR');
-            let hayOperativos = false; let hayFallas = false;
-            internos.forEach(interno => {
-                const item = bd[interno]; if (item.estado === 'Sin chequear') return; const tr = document.createElement('tr');
-                if (item.estado === 'SI') {
-                    hayOperativos = true;
-                    const armarMiniaturaPDF = (src, lbl) => { return src ? `<div class="print-thumb-container"><img src="${formatearLinkMiniatura(src)}" class="print-thumb"><span class="print-lbl-foto">${lbl}</span></div>` : '<div>-</div>'; };
-                    tr.innerHTML = `<td><b>Int ${interno}</b></td><td>${item.fecha}</td><td>${item.serial || '-'}</td><td><div class="print-flex-thumbs">${armarMiniaturaPDF(item.fFrente, 'Frente')}${armarMiniaturaPDF(item.fSerial, 'Serial')}${armarMiniaturaPDF(item.fChip, 'Chip')}${armarMiniaturaPDF(item.fRegistro, 'Registro')}${armarMiniaturaPDF(item.f4P, '4 Pantallas')}</div></td>`;
-                    cuerpoSi.appendChild(tr);
-                } else if (item.estado === 'NO') {
-                    hayFallas = true;
-                    tr.innerHTML = `<td><b>Interno ${interno}</b></td><td>${item.fecha}</td><td class="badge-no">${item.motivo}</td>`;
-                    cuerpoNo.appendChild(tr);
-                }
-            });
-            if (!hayOperativos) cuerpoSi.innerHTML = '<tr><td colspan="4" style="text-align:center;">No hay colectivos operativos</td></tr>';
-            if (!hayFallas) cuerpoNo.innerHTML = '<tr><td colspan="3" style="text-align:center;">No se registraron fallas</td></tr>';
-            window.print();
-        }
-    </script>
-</body>
-</html>
+                    else { el.src = ''; document.getElementById(item.btn
