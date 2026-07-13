@@ -20,7 +20,6 @@
         ul { list-style: none; padding: 0; }
         li { background: #eee; margin: 5px 0; padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; font-size: 14px; align-items: center; }
         
-        /* CONTADORES RÁPIDOS */
         .grid-indicadores { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
         .card-ind { text-align: center; padding: 12px; border-radius: 6px; color: white; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .ind-si { background: #28a745; }
@@ -28,7 +27,6 @@
         .ind-sin { background: #ffc107; color: #212529; }
         .card-ind span { display: block; font-size: 24px; font-weight: 1000; margin-top: 5px; }
 
-        /* CUADRICULA PARA LAS 5 FOTOS */
         .foto-container { text-align: center; margin-top: 10px; background: #fafafa; padding: 15px; border: 1px dashed #bbb; border-radius: 4px; }
         .grid-5-fotos { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-top: 10px; }
         .bloque-foto-visor { background: #fff; padding: 8px; border: 1px solid #ddd; border-radius: 4px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
@@ -103,19 +101,19 @@
             </select>
             
             <div id="campos-si" class="hidden">
-                <label for="input-fotoFrente">Foto del Frente:</label>
+                <label for="input-fotoFrente">Foto del Frente (Opcional):</label>
                 <input type="file" id="input-fotoFrente" accept="image/*">
 
-                <label for="input-fotoSerial">Foto del Serial:</label>
+                <label for="input-fotoSerial">Foto del Serial (Opcional):</label>
                 <input type="file" id="input-fotoSerial" accept="image/*">
 
-                <label for="input-fotoChip">Foto del Chip:</label>
+                <label for="input-fotoChip">Foto del Chip (Opcional):</label>
                 <input type="file" id="input-fotoChip" accept="image/*">
 
-                <label for="input-fotoPaper">Foto del Registro:</label>
+                <label for="input-fotoPaper">Foto del Registro (Opcional):</label>
                 <input type="file" id="input-fotoPaper" accept="image/*">
 
-                <label for="input-foto4P">Foto de las 4 Pantallas:</label>
+                <label for="input-foto4P">Foto de las 4 Pantallas (Opcional):</label>
                 <input type="file" id="input-foto4P" accept="image/*">
 
                 <label for="txt-serial">Número Serial DVR:</label>
@@ -219,7 +217,7 @@
         function formatearLinkMiniatura(urlDrive) {
             if (!urlDrive || (urlDrive.indexOf("id=") === -1 && urlDrive.indexOf("/d/") === -1)) return urlDrive;
             let id = "";
-            if (urlDrive.indexOf("id=") !== -1) { id = urlDrive.split("id=")[1].split("&")[0]; } 
+            if (urlDrive.indexOf("id=") !== -1) { id = urlDrive.split("id=").split("&")[0]; } 
             else { id = urlDrive.split("/d/")[1].split("/")[0]; }
             return `https://google.com{id}`;
         }
@@ -295,6 +293,7 @@
             document.getElementById('campos-si').classList.toggle('hidden', estado !== 'SI');
             document.getElementById('campos-no').classList.toggle('hidden', estado !== 'NO');
         }
+        // CORRECCIÓN CLAVE: Filtra los inputs y sube en ráfaga exclusivamente las fotos seleccionadas
         function guardarChequeo() {
             const interno = document.getElementById('select-interno').value;
             const estado = document.getElementById('select-estado').value;
@@ -309,12 +308,12 @@
                 let p = 0;
                 const procesarSiguienteFoto = async () => {
                     if (p >= archivosMapeados.length) {
-                        alert('¡Chequeo y evidencias guardados exitosamente!');
+                        alert('¡Chequeo guardado exitosamente en la nube!');
                         setTimeout(async () => { await seleccionarLinea(lineaActiva); btn.disabled = false; btn.textContent = "Guardar Chequeo"; }, 1500);
                         return;
                     }
                     const item = archivosMapeados[p];
-                    btn.textContent = `⏳ Subiendo Imagen ${p + 1} de 5...`;
+                    btn.textContent = `⏳ Subiendo Imagen ${p + 1} de ${archivosMapeados.length}...`;
                     
                     try {
                         await fetch(WEB_APP_URL, {
@@ -340,23 +339,36 @@
                 
                 let i = 0;
                 const listaFotosBase64 = [];
+                
                 const convertirInputsABase64 = () => {
                     if (i >= inputs.length) {
+                        // Enviar el registro base de datos de texto
                         fetch(WEB_APP_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(paquete) }).then(() => {
-                            if (listaFotosBase64.length > 0) { subirFotosEnRafaga(listaFotosBase64); } 
-                            else { 
-                                alert('¡Registro guardado!');
+                            if (listaFotosBase64.length > 0) { 
+                                subirFotosEnRafaga(listaFotosBase64); 
+                            } else { 
+                                alert('¡Chequeo guardado exitosamente en la nube!');
                                 setTimeout(async () => { await seleccionarLinea(lineaActiva); btn.disabled = false; btn.textContent = "Guardar Chequeo"; }, 1500);
                             }
                         });
                         return;
                     }
-                    const f = inputs[i]; const fileInput = document.getElementById(f.id).files[0];
+                    
+                    const f = inputs[i]; 
+                    const fileInput = document.getElementById(f.id).files[0]; // Corrección: Lee archivo individual [0]
+                    
                     if (fileInput) {
                         const r = new FileReader();
-                        r.onload = (e) => { listaFotosBase64.push({ tipo: f.tipo, base64: e.target.result }); i++; convertirInputsABase64(); };
+                        r.onload = (e) => { 
+                            listaFotosBase64.push({ tipo: f.tipo, base64: e.target.result }); 
+                            i++; 
+                            convertirInputsABase64(); 
+                        };
                         r.readAsDataURL(fileInput);
-                    } else { i++; convertirInputsABase64(); }
+                    } else { 
+                        i++; 
+                        convertirInputsABase64(); // Salta de forma limpia si el casillero está vacío
+                    }
                 };
                 convertirInputsABase64();
             } else {
@@ -379,7 +391,6 @@
             });
         }
 
-        // Corrección del mapeo para que tome el ID correcto de Drive
         function parseFecha(str) { try { const [f, h] = str.split(' '); const [d, m, a] = f.split('/'); return new Date(`${a}-${m}-${d}T${h}`).getTime(); } catch(e) { return 0; } }
 
         function visualizarFotosParticular() {
@@ -428,13 +439,3 @@
                 }
             });
             if (!hayOperativos) cuerpoSi.innerHTML = '<tr><td colspan="4" style="text-align:center;">No hay colectivos operativos</td></tr>';
-            if (!hayFallas) cuerpoNo.innerHTML = '<tr><td colspan="3" style="text-align:center;">No se registraron fallas</td></tr>';
-            window.print();
-        }
-    </script>
-</body>
-</html>
-
-
-
-
