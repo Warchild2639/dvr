@@ -50,7 +50,7 @@
     </style>
 </head>
 <body>
-    <h1>Control de Dispositivos - Nube</h1>
+    <h1>Control de DVRs - Carlan</h1>
     <div id="pantalla-menu" class="section">
         <h2>Seleccione la Línea de Colectivo</h2>
         <p style="font-size:14px; color:#666; text-align:center; margin-bottom:20px;">Los datos se consultan y guardan en la nube en tiempo real.</p>
@@ -233,20 +233,37 @@
         }
 
         function guardarChequeo() {
-    // ... (resto de variables iniciales)
-    const file4 = document.getElementById('input-foto4').files[0];
-    const fileMenu = document.getElementById('input-fotoMenu').files[0];
+            const interno = document.getElementById('select-interno').value;
+            const estado = document.getElementById('select-estado').value;
+            if (!interno || !estado) return alert('Por favor, seleccione interno y estado.');
+            
+            const btn = document.getElementById('btn-guardar');
+            btn.disabled = true;
+            btn.textContent = "⏳ Subiendo a la Nube...";
 
-    // Corregido: Verificar si existen los archivos (files[0]) y no solo el objeto FileList
-    if (estado === 'SI') {
-        if (file4 && fileMenu) {
-            // ... logica de carga ...
-        }
-        // ... enviarAServidorGoogle();
-    }
-    // ...
-}
+            const ahora = new Date(); 
+            const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
+            const paquete = { linea: lineaActiva, interno: interno, estado: estado, fecha: fechaString, serial: '', foto4: '', fotoMenu: '', motivo: '' };
 
+            const enviarAServidorGoogle = async () => {
+                try {
+                    await fetch(WEB_APP_URL, { 
+                        method: "POST", 
+                        mode: "no-cors",
+                        headers: { "Content-Type": "text/plain" }, 
+                        body: JSON.stringify(paquete) 
+                    });
+                    alert('¡Chequeo enviado exitosamente a la nube!');
+                    setTimeout(async () => {
+                        await seleccionarLinea(lineaActiva);
+                        btn.disabled = false;
+                        btn.textContent = "Guardar Chequeo";
+                    }, 2500);
+                } catch(err) { 
+                    alert('Error de red al intentar conectar con Google.'); 
+                    btn.disabled = false; btn.textContent = "Guardar Chequeo";
+                }
+            };
 
             if (estado === 'SI') {
                 const file4 = document.getElementById('input-foto4').files;
