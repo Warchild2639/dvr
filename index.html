@@ -35,7 +35,6 @@
         .foto-visualizador { width: 100%; height: 90px; border-radius: 4px; object-fit: cover; display: block; margin: 5px auto; background: #eaeaea; }
         .txt-titulo-foto { font-size: 11px; font-weight: bold; color: #555; text-transform: uppercase; }
 
-        /* AVISO ANIMADO DE LECTURA DE IA */
         .loading-ocr { font-size: 14px; color: #856404; background-color: #fff3cd; border: 1px solid #ffeeba; padding: 10px; border-radius: 4px; margin-bottom: 10px; text-align: center; font-weight: bold; }
 
         .linea-btn { margin-bottom: 12px; font-size: 18px; padding: 15px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
@@ -112,15 +111,13 @@
                 <label for="input-fotoSerial">Foto del Serial:</label>
                 <input type="file" id="input-fotoSerial" accept="image/*">
 
-                <!-- CAMBIO: Al subir la foto del chip se acciona el escáner de IA automático -->
                 <label for="input-fotoChip" style="color: #0056b3;">Foto del Chip (Escáner de Serial Inteligente):</label>
                 <input type="file" id="input-fotoChip" accept="image/*" onchange="escanearFotoChipSerial(this)">
                 
-                <!-- CARTEL EN PANTALLA MIENTRAS TRABAJA LA INTELIGENCIA ARTIFICIAL -->
                 <div id="status-ocr" class="loading-ocr hidden">⏳ IA Procesando Foto del Chip... Escaneando renglón de "SN"...</div>
 
-                <label for="input-fotoRegistro">Foto del Registro:</label>
-                <input type="file" id="input-fotoRegistro" accept="image/*">
+                <label for="input-fotoPaper">Foto del Registro:</label>
+                <input type="file" id="input-fotoPaper" accept="image/*">
 
                 <label for="input-foto4P">Foto de las 4 Pantallas:</label>
                 <input type="file" id="input-foto4P" accept="image/*">
@@ -224,14 +221,13 @@
         let baseCompletaNube = {};
 
         function formatearLinkMiniatura(urlDrive) {
-            if (!urlDrive || urlDrive.indexOf("id=") === -1 && urlDrive.indexOf("/d/") === -1) return urlDrive;
+            if (!urlDrive || (urlDrive.indexOf("id=") === -1 && urlDrive.indexOf("/d/") === -1)) return urlDrive;
             let id = "";
             if (urlDrive.indexOf("id=") !== -1) { id = urlDrive.split("id=")[1].split("&")[0]; } 
             else { id = urlDrive.split("/d/")[1].split("/")[0]; }
             return `https://google.com{id}`;
         }
 
-        // LÓGICA DE EXTRACCIÓN AUTOMÁTICA DE SERIAL DESDE LA FOTO DEL CHIP
         function escanearFotoChipSerial(input) {
             const file = input.files[0];
             if (!file) return;
@@ -241,32 +237,22 @@
 
             const lector = new FileReader();
             lector.onload = function(e) {
-                // Ejecuta la lectura OCR enfocada en español e inglés
                 Tesseract.recognize(e.target.result, 'eng+spa')
                     .then(({ data: { text } }) => {
-                        console.log("Texto completo extraído de la foto del chip:", text);
-                        
-                        // REGLA DE BÚSQUEDA (Regex): Busca renglones donde aparezca SN
-                        // Y extrae la cadena larga que empiece con un número y siga con F mayúscula
                         const patronSerial = /\b\d[Ff][A-Z0-9]{5,25}\b/g;
                         const coincidencias = text.match(patronSerial);
-
                         if (coincidencias && coincidencias.length > 0) {
-                            // Toma la cadena encontrada más larga para evitar fragmentos
                             const serialDetectado = coincidencias.reduce((a, b) => a.length > b.length ? a : b);
                             document.getElementById('txt-serial').value = serialDetectado.toUpperCase();
                         } else {
-                            // Búsqueda secundaria en caso de que falte el número inicial por un reflejo
                             const patronSecundario = /\b[Ff][A-Z0-9]{8,25}\b/g;
                             const coicidenciasSec = text.match(patronSecundario);
                             if (coicidenciasSec && coicidenciasSec.length > 0) {
                                 document.getElementById('txt-serial').value = coicidenciasSec[0].toUpperCase();
-                            } else {
-                                console.warn("La IA no pudo aislar el patrón serial (Número + F). Escríbalo manualmente.");
                             }
                         }
                     })
-                    .catch(err => console.error("Falla en el motor de Inteligencia Artificial OCR:", err))
+                    .catch(err => console.error("Falla en OCR:", err))
                     .finally(() => cartel.classList.add('hidden'));
             };
             lector.readAsDataURL(file);
@@ -343,57 +329,87 @@
             document.getElementById('campos-si').classList.toggle('hidden', estado !== 'SI');
             document.getElementById('campos-no').classList.toggle('hidden', estado !== 'NO');
         }
+        // REFORMA OPTIMIZADA: Envía los datos textuales primero y las imágenes de forma individual por ráfagas
         function guardarChequeo() {
             const interno = document.getElementById('select-interno').value;
             const estado = document.getElementById('select-estado').value;
             if (!interno || !estado) return alert('Por favor, seleccione interno y estado.');
             
-            const btn = document.getElementById('btn-guardar'); btn.disabled = true; btn.textContent = "⏳ Subiendo a la Nube...";
+            const btn = document.getElementById('btn-guardar'); btn.disabled = true; btn.textContent = "⏳ Guardando Registro...";
             const ahora = new Date(); const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
             
-            const paquete = { linea: lineaActiva, interno: interno, estado: estado, fecha: fechaString, serial: '', fFrente:'', fSerial:'', fChip:'', fRegistro:'', f4P:'', motivo: '' };
+            // Paquete base ultra liviano (Sin fotos adjuntas)
+            const paquete = { action: 'registroBase', linea: lineaActiva, interno: interno, estado: estado, fecha: fechaString, serial: '', motivo: '' };
 
-            const enviarAServidorGoogle = async () => {
-                try {
-                    await fetch(WEB_APP_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(paquete) });
-                    alert('¡Chequeo guardado exitosamente en la nube!');
-                    setTimeout(async () => { await seleccionarLinea(lineaActiva); btn.disabled = false; btn.textContent = "Guardar Chequeo"; }, 2500);
-                } catch(err) { alert('Error de red.'); btn.disabled = false; btn.textContent = "Guardar Chequeo"; }
+            const subirFotosEnRafaga = (archivosMapeados) => {
+                let p = 0;
+                const procesarSiguienteFoto = async () => {
+                    if (p >= archivosMapeados.length) {
+                        alert('¡Chequeo y evidencias guardados exitosamente!');
+                        setTimeout(async () => { await seleccionarLinea(lineaActiva); btn.disabled = false; btn.textContent = "Guardar Chequeo"; }, 1500);
+                        return;
+                    }
+                    const item = archivosMapeados[p];
+                    btn.textContent = `⏳ Subiendo Imagen ${p + 1} de 5...`;
+                    
+                    try {
+                        await fetch(WEB_APP_URL, {
+                            method: "POST",
+                            mode: "no-cors",
+                            body: JSON.stringify({ action: 'subirFoto', linea: lineaActiva, interno: interno, tipoFoto: item.tipo, archivoBase64: item.base64 })
+                        });
+                    } catch(e) { console.error("Error secuencial de subida", e); }
+                    
+                    p++;
+                    procesarSiguienteFoto();
+                };
+                procesarSiguienteFoto();
             };
 
             if (estado === 'SI') {
                 paquete.serial = document.getElementById('txt-serial').value.trim();
-                const files = [
-                    { key: 'fFrente', id: 'input-fotoFrente' }, { key: 'fSerial', id: 'input-fotoSerial' },
-                    { key: 'fChip', id: 'input-fotoChip' }, { key: 'fRegistro', id: 'input-fotoRegistro' },
-                    { key: 'f4P', id: 'input-foto4P' }
+                const inputs = [
+                    { tipo: 'fFrente', id: 'input-fotoFrente' }, { tipo: 'fSerial', id: 'input-fotoSerial' },
+                    { tipo: 'fChip', id: 'input-fotoChip' }, { tipo: 'fRegistro', id: 'input-fotoPaper' },
+                    { tipo: 'f4P', id: 'input-foto4P' }
                 ];
                 
-                let indice = 0;
-                const procesarSiguienteFoto = () => {
-                    if (indice >= files.length) { enviarAServidorGoogle(); return; }
-                    const item = files[indice]; const fileInput = document.getElementById(item.id).files[0];
+                let i = 0;
+                const listaFotosBase64 = [];
+                const convertirInputsABase64 = () => {
+                    if (i >= inputs.length) {
+                        // Primero disparamos el guardado de la fila base en Sheets
+                        fetch(WEB_APP_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(paquete) }).then(() => {
+                            if (listaFotosBase64.length > 0) { subirFotosEnRafaga(listaFotosBase64); } 
+                            else { enviarAServidorGoogle(); }
+                        });
+                        return;
+                    }
+                    const f = inputs[i]; const fileInput = document.getElementById(f.id).files[0];
                     if (fileInput) {
                         const r = new FileReader();
-                        r.onload = (e) => { paquete[item.key] = e.target.result; indice++; procesarSiguienteFoto(); };
+                        r.onload = (e) => { listaFotosBase64.push({ tipo: f.tipo, base64: e.target.result }); i++; convertirInputsABase64(); };
                         r.readAsDataURL(fileInput);
-                    } else { indice++; procesarSiguienteFoto(); }
+                    } else { i++; convertirInputsABase64(); }
                 };
-                procesarSiguienteFoto();
+                convertirInputsABase64();
             } else {
                 paquete.motivo = document.getElementById('txt-motivo').value;
                 if (!paquete.motivo.trim()) { alert('Ingrese el motivo.'); btn.disabled = false; btn.textContent = "Guardar Chequeo"; return; }
-                enviarAServidorGoogle();
+                fetch(WEB_APP_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(paquete) }).then(() => {
+                    alert('¡Novedad de falla guardada exitosamente!');
+                    setTimeout(async () => { await seleccionarLinea(lineaActiva); btn.disabled = false; btn.textContent = "Guardar Chequeo"; }, 1500);
+                });
             }
         }
 
         function calcularAntiguos() {
-            const lista = document.getElementById('lista-antiguos'); if (!lista) return; lista.innerHTML = '';
+            const list = document.getElementById('lista-antiguos'); if (!list) return; list.innerHTML = '';
             const arreglados = Object.keys(bd).map(interno => ({ interno: interno, ...bd[interno], timestamp: bd[interno].fecha ? parseFecha(bd[interno].fecha) : 0 }));
             arreglados.sort((a, b) => a.timestamp - b.timestamp);
             arreglados.slice(0, 5).forEach(item => {
                 const li = document.createElement('li'); const infoText = item.fecha ? `Último: ${item.fecha} (${item.estado})` : 'Nunca chequeado';
-                li.innerHTML = `<strong>Interno ${item.interno}</strong> <span>${infoText}</span>`; lista.appendChild(li);
+                li.innerHTML = `<strong>Interno ${item.interno}</strong> <span>${infoText}</span>`; list.appendChild(li);
             });
         }
 
@@ -403,7 +419,6 @@
             const interno = document.getElementById('select-visor').value; const contenedor = document.getElementById('visor-contenedor'); const txtVacio = document.getElementById('visor-vacio');
             if (interno && bd[interno] && bd[interno].estado === 'SI') {
                 document.getElementById('visor-serial-txt').textContent = bd[interno].serial || 'Sin número serial';
-                
                 const fotosMapeo = [
                     { id: 'visor-imgFrente', btn: 'btn-down-frente', src: bd[interno].fFrente },
                     { id: 'visor-imgSerial', btn: 'btn-down-serial', src: bd[interno].fSerial },
@@ -411,13 +426,11 @@
                     { id: 'visor-imgRegistro', btn: 'btn-down-registro', src: bd[interno].fRegistro },
                     { id: 'visor-img4P', btn: 'btn-down-4p', src: bd[interno].f4P }
                 ];
-                
                 fotosMapeo.forEach(item => {
                     const el = document.getElementById(item.id);
                     if (item.src) { el.src = formatearLinkMiniatura(item.src); document.getElementById(item.btn).style.display = 'inline-block'; } 
                     else { el.src = ''; document.getElementById(item.btn).style.display = 'none'; }
                 });
-                
                 contenedor.classList.remove('hidden'); txtVacio.classList.add('hidden');
             } else { contenedor.classList.add('hidden'); txtVacio.classList.remove('hidden'); }
         }
@@ -438,25 +451,8 @@
                 const item = bd[interno]; if (item.estado === 'Sin chequear') return; const tr = document.createElement('tr');
                 if (item.estado === 'SI') {
                     hayOperativos = true;
-                    
-                    const armarMiniaturaPDF = (src, lbl) => {
-                        return src ? `<div class="print-thumb-container"><img src="${formatearLinkMiniatura(src)}" class="print-thumb"><span class="print-lbl-foto">${lbl}</span></div>` : '<div>-</div>';
-                    };
-                    
-                    tr.innerHTML = `
-                        <td><b>Int ${interno}</b></td>
-                        <td>${item.fecha}</td>
-                        <td>${item.serial || '-'}</td>
-                        <td>
-                            <div class="print-flex-thumbs">
-                                ${armarMiniaturaPDF(item.fFrente, 'Frente')}
-                                ${armarMiniaturaPDF(item.fSerial, 'Serial')}
-                                ${armarMiniaturaPDF(item.fChip, 'Chip')}
-                                ${armarMiniaturaPDF(item.fRegistro, 'Registro')}
-                                ${armarMiniaturaPDF(item.f4P, '4 Pantallas')}
-                            </div>
-                        </td>
-                    `;
+                    const armarMiniaturaPDF = (src, lbl) => { return src ? `<div class="print-thumb-container"><img src="${formatearLinkMiniatura(src)}" class="print-thumb"><span class="print-lbl-foto">${lbl}</span></div>` : '<div>-</div>'; };
+                    tr.innerHTML = `<td><b>Int ${interno}</b></td><td>${item.fecha}</td><td>${item.serial || '-'}</td><td><div class="print-flex-thumbs">${armarMiniaturaPDF(item.fFrente, 'Frente')}${armarMiniaturaPDF(item.fSerial, 'Serial')}${armarMiniaturaPDF(item.fChip, 'Chip')}${armarMiniaturaPDF(item.fRegistro, 'Registro')}${armarMiniaturaPDF(item.f4P, '4 Pantallas')}</div></td>`;
                     cuerpoSi.appendChild(tr);
                 } else if (item.estado === 'NO') {
                     hayFallas = true;
