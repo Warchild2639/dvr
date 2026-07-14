@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control de Dispositivos - Colectivos</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 650px; margin: 20px auto; padding: 0 15px; background: #f4f7f6; color: #333; }
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 0 15px; background: #f4f7f6; color: #333; }
         h1, h2, h3 { text-align: center; color: #0056b3; }
         .section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
         label { display: block; margin: 10px 0 5px; font-weight: bold; }
@@ -14,26 +14,14 @@
         button:hover { background: #0056b3; }
         .btn-export { background: #28a745; }
         .btn-export:hover { background: #218838; }
-        .btn-download { background: #17a2b8; margin-top: 5px; font-size: 12px; padding: 6px; }
+        .btn-download { background: #17a2b8; margin-top: 5px; }
         .btn-download:hover { background: #138496; }
         .hidden { display: none; }
         ul { list-style: none; padding: 0; }
         li { background: #eee; margin: 5px 0; padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; font-size: 14px; align-items: center; }
-        /* DISEÑO DE CONTADORES RÁPIDOS */
-        .grid-indicadores { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
-        .card-ind { text-align: center; padding: 12px; border-radius: 6px; color: white; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .ind-si { background: #28a745; }
-        .ind-no { background: #dc3545; }
-        .ind-sin { background: #ffc107; color: #212529; }
-        .card-ind span { display: block; font-size: 24px; font-weight: 1000; margin-top: 5px; }
-
-        /* MULTIMEDIA EN CUADRICULA (5 FOTOS) */
-        .foto-container { text-align: center; margin-top: 10px; background: #fafafa; padding: 15px; border: 1px dashed #bbb; border-radius: 4px; }
-        .grid-5-fotos { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-top: 10px; }
-        .bloque-foto-visor { background: #fff; padding: 8px; border: 1px solid #ddd; border-radius: 4px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
-        .foto-visualizador { width: 100%; height: 90px; border-radius: 4px; object-fit: cover; display: block; margin: 5px auto; background: #eaeaea; }
-        .txt-titulo-foto { font-size: 11px; font-weight: bold; color: #555; text-transform: uppercase; }
-
+        .foto-container { text-align: center; margin-top: 10px; background: #fafafa; padding: 10px; border: 1px dashed #bbb; border-radius: 4px; }
+        .grid-fotos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .foto-visualizador { max-width: 100%; max-height: 180px; border-radius: 4px; display: block; margin: 0 auto; object-fit: cover; }
         .linea-btn { margin-bottom: 12px; font-size: 18px; padding: 15px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
         .verde-claro { background: #4cbd5c !important; }
         .verde-claro:hover { background: #3fa34f !important; }
@@ -46,27 +34,23 @@
         .btn-volver { background: #6c757d; font-size: 14px; padding: 8px; width: auto; display: inline-block; margin-bottom: 15px; }
         .btn-volver:hover { background: #5a6268; }
         .lbl-linea-activa { font-size: 16px; background: #e9ecef; padding: 8px; border-radius: 4px; display: inline-block; font-weight: bold; margin-bottom: 15px; color: #495057; border-left: 5px solid #007bff; }
-        
         #reporte-impresion { display: none; }
         @media print {
             body { background: white; color: black; max-width: 100%; margin: 0; padding: 0; }
-            .section, h1, .btn-volver, .lbl-linea-activa, .grid-indicadores { display: none !important; } 
+            .section, h1, .btn-volver, .lbl-linea-activa { display: none !important; } 
             #reporte-impresion { display: block !important; } 
             .print-section { page-break-inside: avoid; margin-bottom: 30px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; table-layout: fixed; }
-            th, td { border: 1px solid #333; padding: 5px; text-align: left; word-wrap: break-word; vertical-align: top; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; table-layout: fixed; }
+            th, td { border: 1px solid #333; padding: 6px; text-align: left; word-wrap: break-word; vertical-align: top; }
             th { background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .badge-no { color: red; font-weight: bold; }
-            .print-thumb-container { display: flex; flex-direction: column; align-items: center; background: #fdfdfd; padding: 3px; border: 1px solid #ccc; border-radius: 3px; }
-            .print-thumb { max-width: 85px; max-height: 60px; border-radius: 2px; object-fit: cover; }
-            .print-flex-thumbs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
-            .print-lbl-foto { font-size: 8px; font-weight: bold; text-align: center; display: block; margin-top: 2px; }
+            .print-thumb { max-width: 90px; max-height: 65px; border-radius: 4px; display: block; margin: 2px auto; }
+            .print-flex-thumbs { display: flex; gap: 5px; justify-content: center; }
         }
     </style>
 </head>
 <body>
-    <h1>Control de Dispositivos - Nube</h1>
-    
+    <h1>Control de DVRs - Carlan</h1>
     <div id="pantalla-menu" class="section">
         <h2>Seleccione la Línea de Colectivo</h2>
         <p style="font-size:14px; color:#666; text-align:center; margin-bottom:20px;">Los datos se consultan y guardan en la nube en tiempo real.</p>
@@ -79,19 +63,9 @@
         <button class="linea-btn morado" onclick="seleccionarLinea('514')">Línea 514</button>
         <button class="linea-btn verde-oscuro" onclick="seleccionarLinea('Varela')">Línea Varela</button>
     </div>
-
     <div id="pantalla-gestion" class="hidden">
         <button class="btn-volver" onclick="volverAlMenu()">← Cambiar de Línea</button>
         <div><span id="linea-activa-txt" class="lbl-linea-activa">Línea: Ninguna</span></div>
-
-        <!-- INDICADORES RÁPIDOS EN TIEMPO REAL -->
-        <div class="grid-indicadores">
-            <div class="card-ind ind-si">OPERATIVOS<span id="ind-cant-si">0</span></div>
-            <div class="card-ind ind-no">CON FALLA<span id="ind-cant-no">0</span></div>
-            <div class="card-ind ind-sin">PENDIENTES<span id="ind-cant-sin">0</span></div>
-        </div>
-
-        <!-- 1. REGISTRAR CHEQUEO -->
         <div class="section">
             <h2>1. Registrar Chequeo</h2>
             <label for="select-interno">Número de Interno:</label>
@@ -104,51 +78,43 @@
                 <option value="SI">SÍ funciona</option>
                 <option value="NO">NO funciona</option>
             </select>
-            <!-- CAMPOS SI FUNCIONA -->
             <div id="campos-si" class="hidden">
-                <label for="input-fotoFrente">Foto del Frente:</label>
-                <input type="file" id="input-fotoFrente" accept="image/*">
-                <label for="input-fotoSerial">Foto del Serial:</label>
-                <input type="file" id="input-fotoSerial" accept="image/*">
-                <label for="input-fotoChip">Foto del Chip:</label>
-                <input type="file" id="input-fotoChip" accept="image/*">
-                <label for="input-fotoRegistro">Foto del Registro:</label>
-                <input type="file" id="input-fotoRegistro" accept="image/*">
-                <label for="input-foto4P">Foto de las 4 Pantallas:</label>
-                <input type="file" id="input-foto4P" accept="image/*">
+                <label for="input-foto4">Foto de las 4 Pantallas:</label>
+                <input type="file" id="input-foto4" accept="image/*">
+                <label for="input-fotoMenu">Foto del Menú Interno:</label>
+                <input type="file" id="input-fotoMenu" accept="image/*">
                 <label for="txt-serial">Número Serial:</label>
                 <input type="text" id="txt-serial" placeholder="Escriba el número serial aquí...">
             </div>
-
-            <!-- CAMPOS NO FUNCIONA -->
             <div id="campos-no" class="hidden">
                 <label for="txt-motivo">Motivo de la falla:</label>
                 <textarea id="txt-motivo" rows="3" placeholder="Escriba el motivo aquí..."></textarea>
             </div>
             <button id="btn-guardar" onclick="guardarChequeo()" style="margin-top:15px;">Guardar Chequeo</button>
         </div>
-
-        <!-- 2. VISOR PARTICULAR -->
         <div class="section">
             <h2>2. Consultar Fotos e Info de Interno</h2>
             <label for="select-visor">Seleccione Interno para consultar:</label>
             <select id="select-visor" onchange="visualizarFotosParticular()">
                 <option value="">-- Seleccione un interno --</option>
             </select>
-            
             <div id="visor-contenedor" class="foto-container hidden">
                 <p style="text-align:left; margin:5px 0;"><b>N° Serial:</b> <span id="visor-serial-txt">-</span></p>
-                <div class="grid-5-fotos">
-                    <div class="bloque-foto-visor"><span class="txt-titulo-foto">Frente</span><img id="visor-imgFrente" src="" class="foto-visualizador"><button id="btn-down-frente" class="btn-download" onclick="abrirFoto('frente')">Ver</button></div>
-                    <div class="bloque-foto-visor"><span class="txt-titulo-foto">Serial</span><img id="visor-imgSerial" src="" class="foto-visualizador"><button id="btn-down-serial" class="btn-download" onclick="abrirFoto('serial')">Ver</button></div>
-                    <div class="bloque-foto-visor"><span class="txt-titulo-foto">Chip</span><img id="visor-imgChip" src="" class="foto-visualizador"><button id="btn-down-chip" class="btn-download" onclick="abrirFoto('chip')">Ver</button></div>
-                    <div class="bloque-foto-visor"><span class="txt-titulo-foto">Registro</span><img id="visor-imgRegistro" src="" class="foto-visualizador"><button id="btn-down-registro" class="btn-download" onclick="abrirFoto('registro')">Ver</button></div>
-                    <div class="bloque-foto-visor"><span class="txt-titulo-foto">4P</span><img id="visor-img4P" src="" class="foto-visualizador"><button id="btn-down-4p" class="btn-download" onclick="abrirFoto('4p')">Ver</button></div>
+                <div class="grid-fotos">
+                    <div>
+                        <span style="font-size:12px; font-weight:bold;">Foto 4 Pantallas</span>
+                        <img id="visor-img4" src="" class="foto-visualizador" alt="4 Pantallas">
+                        <button id="btn-down-4" class="btn-download" onclick="abrirFoto('4')">Ver Foto Grande</button>
+                    </div>
+                    <div>
+                        <span style="font-size:12px; font-weight:bold;">Foto Menú Interno</span>
+                        <img id="visor-imgMenu" src="" class="foto-visualizador" alt="Menú Interno">
+                        <button id="btn-down-menu" class="btn-download" onclick="abrirFoto('menu')">Ver Foto Grande</button>
+                    </div>
                 </div>
             </div>
             <p id="visor-vacio" style="font-size: 13px; color: #666; text-align: center; margin-top: 5px;">Este interno no posee registros multimedia.</p>
         </div>
-        <!-- 3. REPORTES -->
         <div class="section">
             <h2>3. Alertas y Exportación</h2>
             <h3>Próximos a chequear (Más antiguos o sin revisar)</h3>
@@ -156,76 +122,90 @@
             <button class="btn-export" onclick="exportarPDF()">Exportar Reporte Completo a PDF</button>
         </div>
     </div>
-
-    <!-- DOCUMENTO MAQUETADO DE IMPRESIÓN (PDF OCULTO) -->
     <div id="reporte-impresion">
-        <h2 id="print-titulo">Reporte General de Control de Flota</h2>
-        <p id="fecha-reporte"></p>
+        <h2 id="print-titulo" style="text-align: center; color: #000; margin-bottom: 5px;">Reporte General de Control de Flota</h2>
+        <p id="fecha-reporte" style="text-align: center; font-size: 12px; color: #555; margin-bottom: 25px;"></p>
         <div class="print-section">
-            <h3>Dispositivos que SÍ Funcionan</h3>
+            <h3 style="color: green; border-bottom: 2px solid green; padding-bottom: 3px;">Dispositivos que SÍ Funcionan</h3>
             <table>
-                <thead><tr><th style="width: 10%;">Interno</th><th style="width: 15%;">Último Control</th><th style="width: 15%;">N° Serial</th><th style="width: 60%;">Evidencias (Frente / Serial / Chip / Reg / 4P)</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">Interno</th>
+                        <th style="width: 20%;">Último Control</th>
+                        <th style="width: 20%;">N° Serial</th>
+                        <th style="width: 45%;">Evidencias Fotográficas (4 Pantallas / Menú)</th>
+                    </tr>
+                </thead>
                 <tbody id="tabla-si-cuerpo"></tbody>
             </table>
         </div>
         <div class="print-section">
-            <h3>Dispositivos que NO Funcionan</h3>
+            <h3 style="color: red; border-bottom: 2px solid red; padding-bottom: 3px;">Dispositivos que NO Funcionan</h3>
             <table>
-                <thead><tr><th style="width: 15%;">Interno</th><th style="width: 25%;">Último Control</th><th style="width: 60%;">Motivo de la Falla</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">Interno</th>
+                        <th style="width: 25%;">Último Control</th>
+                        <th style="width: 60%;">Motivo de la Falla</th>
+                    </tr>
+                </thead>
                 <tbody id="tabla-no-cuerpo"></tbody>
             </table>
         </div>
     </div>
     <script>
-        // TU URL EJECUTABLE COMPLETA DE GOOGLE APPS SCRIPT
-        const WEB_APP_URL = "https://google.com"; 
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyCFOGNDwgHTdxQFA9D6s1CLgtdg70jG-GkjMXBrYoYLbJscDFQ96d8mvik2k8tpxWE/exec";
 
-        let lineaActiva = ""; let bd = {}; let baseCompletaNube = {};
+        let lineaActiva = "";
+        let bd = {}; 
+        let baseCompletaNube = {};
 
-        function formatearLinkMiniatura(urlDrive) {
-            if (!urlDrive || (urlDrive.indexOf("id=") === -1 && urlDrive.indexOf("/d/") === -1)) return urlDrive;
-            let id = "";
-            if (urlDrive.indexOf("id=") !== -1) { id = urlDrive.split("id=")[1].split("&")[0]; } 
-            else { id = urlDrive.split("/d/")[1].split("/")[0]; }
-            return `https://google.com{id}`;
-        }
-
-        async function cargarDatosDesdeNube() {
-            try {
-                const res = await fetch(`${WEB_APP_URL}?_=${new Date().getTime()}`);
-                if (res.ok) { baseCompletaNube = await res.json(); }
-            } catch(e) { console.error("Error leyendo de la nube", e); }
+        function cargarDatosDesdeNube() {
+            return new Promise((resolve) => {
+                const nombreCallback = "jsonp_callback_" + Date.now();
+                window[nombreCallback] = function(datos) {
+                    baseCompletaNube = datos;
+                    delete window[nombreCallback];
+                    document.body.removeChild(script);
+                    resolve();
+                };
+                const script = document.createElement("script");
+                script.src = WEB_APP_URL + "?callback=" + nombreCallback + "&_nocache=" + Date.now();
+                script.onerror = function() {
+                    console.error("Error cargando datos por fallas de red externa.");
+                    delete window[nombreCallback];
+                    try { document.body.removeChild(script); } catch(e){}
+                    resolve();
+                };
+                document.body.appendChild(script);
+            });
         }
 
         async function seleccionarLinea(nombreLinea) {
             lineaActiva = nombreLinea;
-            document.getElementById('linea-activa-txt').textContent = "Descargando datos en tiempo real de Línea " + lineaActiva + "...";
+            document.getElementById('linea-activa-txt').textContent = "Cargando Línea " + lineaActiva + "...";
             document.getElementById('pantalla-menu').classList.add('hidden');
             document.getElementById('pantalla-gestion').classList.remove('hidden');
+
             await cargarDatosDesdeNube();
             bd = baseCompletaNube[lineaActiva] || {};
+
             try {
-                const respuesta = await fetch(`parque/${lineaActiva}.txt?_=${new Date().getTime()}`);
+                const respuesta = await fetch(`parque/${lineaActiva}.txt`);
                 if (respuesta.ok) {
                     const texto = await respuesta.text();
                     const internosArchivo = texto.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
                     internosArchivo.forEach(interno => {
-                        if (!bd[interno]) { bd[interno] = { estado: 'Sin chequear', fecha: '', motivo: '', fFrente:'', fSerial:'', fChip:'', fRegistro:'', f4P:'', serial:'' }; }
+                        if (!bd[interno]) {
+                            bd[interno] = { estado: 'Sin chequear', fecha: '', motivo: '', foto4: '', fotoMenu: '', serial: '' };
+                        }
                     });
                 }
             } catch (error) { console.error("Error al sincronizar el parque:", error); }
-            document.getElementById('linea-activa-txt').textContent = "Línea activa: " + lineaActiva;
-            actualizarSelects(); calcularAntiguos(); actualizarIndicadoresRapidos();
-        }
 
-        function actualizarIndicadoresRapidos() {
-            let si = 0, no = 0, sin = 0;
-            Object.keys(bd).forEach(interno => {
-                if (bd[interno].estado === "SI") si++; else if (bd[interno].estado === "NO") no++; else sin++;
-            });
-            document.getElementById('ind-cant-si').textContent = si;
-            document.getElementById('ind-cant-no').textContent = no;
-            document.getElementById('ind-cant-sin').textContent = sin;
+            document.getElementById('linea-activa-txt').textContent = "Línea activa: " + lineaActiva;
+            actualizarSelects();
+            calcularAntiguos();
         }
 
         function volverAlMenu() {
@@ -233,9 +213,9 @@
             document.getElementById('pantalla-gestion').classList.add('hidden');
             document.getElementById('pantalla-menu').classList.remove('hidden');
         }
-
         function actualizarSelects() {
-            const selectForm = document.getElementById('select-interno'); const selectVisor = document.getElementById('select-visor');
+            const selectForm = document.getElementById('select-interno');
+            const selectVisor = document.getElementById('select-visor');
             const valorFormAntes = selectForm.value; const valorVisorAntes = selectVisor.value;
             selectForm.innerHTML = '<option value="">-- Seleccione un interno --</option>';
             selectVisor.innerHTML = '<option value="">-- Seleccione un interno --</option>';
@@ -251,73 +231,67 @@
             document.getElementById('campos-si').classList.toggle('hidden', estado !== 'SI');
             document.getElementById('campos-no').classList.toggle('hidden', estado !== 'NO');
         }
-        async function guardarChequeo() {
+
+        function guardarChequeo() {
             const interno = document.getElementById('select-interno').value;
             const estado = document.getElementById('select-estado').value;
             if (!interno || !estado) return alert('Por favor, seleccione interno y estado.');
-            const btn = document.getElementById('btn-guardar'); btn.disabled = true; btn.textContent = "⏳ Guardando datos básicos...";
-            const ahora = new Date(); const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
             
-            const paquete = { 
-                linea: lineaActiva, interno: interno, estado: estado, fecha: fechaString, 
-                serial: estado === 'SI' ? document.getElementById('txt-serial').value.trim() : '', 
-                motivo: estado === 'NO' ? document.getElementById('txt-motivo').value.trim() : '',
-                fFrente:'', fSerial:'', fChip:'', fRegistro:'', f4P:'' 
-            };
-            if (estado === 'NO' && !paquete.motivo) { alert('Ingrese el motivo.'); btn.disabled = false; btn.textContent = "Guardar Chequeo"; return; }
+            const btn = document.getElementById('btn-guardar');
+            btn.disabled = true;
+            btn.textContent = "⏳ Subiendo a la Nube...";
 
-            try {
-                // 1. Guardar la información de texto primero de forma primaria
-                await fetch(WEB_APP_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(paquete) });
-                
-                // 2. Si el estado es operativo, procesar la subida secuencial aislando lectores de memoria
-                if (estado === 'SI') {
-                    const inputsFotos = [
-                        { key: 'fFrente', id: 'input-fotoFrente' }, { key: 'fSerial', id: 'input-fotoSerial' },
-                        { key: 'fChip', id: 'input-fotoChip' }, { key: 'fRegistro', id: 'input-fotoRegistro' }, { key: 'f4P', id: 'input-foto4P' }
-                    ];
-                    const fotosParaSubir = inputsFotos.filter(item => { const inp = document.getElementById(item.id); return inp && inp.files && inp.files.length > 0; });
-                    
-                    if (fotosParaSubir.length > 0) {
-                        let completadas = 0; btn.textContent = `⏳ Subiendo fotos (0 de ${fotosParaSubir.length})...`;
-                        
-                        for (const item of fotosParaSubir) {
-                            const fileEl = document.getElementById(item.id);
-                            const archivo = fileEl.files[0];
+            const ahora = new Date(); 
+            const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
+            const paquete = { linea: lineaActiva, interno: interno, estado: estado, fecha: fechaString, serial: '', foto4: '', fotoMenu: '', motivo: '' };
 
-                            await new Promise((resolve) => {
-                                const lectorUnico = new FileReader();
-                                lectorUnico.onload = async (e) => {
-                                    try {
-                                        var parametrosFoto = new URLSearchParams();
-                                        parametrosFoto.append('action', 'uploadPhoto');
-                                        parametrosFoto.append('linea', lineaActiva);
-                                        parametrosFoto.append('interno', interno);
-                                        parametrosFoto.append('tipoFoto', item.key);
-                                        parametrosFoto.append('fileData', e.target.result);
-
-                                        await fetch(WEB_APP_URL, {
-                                            method: "POST", mode: "no-cors", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: parametrosFoto
-                                        });
-                                        completadas++; btn.textContent = `⏳ Subiendo fotos (${completadas} de ${fotosParaSubir.length})...`;
-                                    } catch (err) { console.error("Error al transmitir archivo:", err); }
-                                    resolve(true);
-                                };
-                                lectorUnico.onerror = () => { resolve(true); };
-                                lectorUnico.readAsDataURL(archivo);
-                            });
-                        }
-                    }
+            const enviarAServidorGoogle = async () => {
+                try {
+                    await fetch(WEB_APP_URL, { 
+                        method: "POST", 
+                        mode: "no-cors",
+                        headers: { "Content-Type": "text/plain" }, 
+                        body: JSON.stringify(paquete) 
+                    });
+                    alert('¡Chequeo enviado exitosamente a la nube!');
+                    setTimeout(async () => {
+                        await seleccionarLinea(lineaActiva);
+                        btn.disabled = false;
+                        btn.textContent = "Guardar Chequeo";
+                    }, 2500);
+                } catch(err) { 
+                    alert('Error de red al intentar conectar con Google.'); 
+                    btn.disabled = false; btn.textContent = "Guardar Chequeo";
                 }
-                alert('¡Chequeo guardado exitosamente!');
-                setTimeout(async () => { await seleccionarLinea(lineaActiva); limpiarCamposFormulario(); btn.disabled = false; btn.textContent = "Guardar Chequeo"; }, 1500);
-            } catch(err) { alert('Error de red.'); btn.disabled = false; btn.textContent = "Guardar Chequeo"; }
-        }
+            };
 
-        function limpiarCamposFormulario() {
-            document.getElementById('select-estado').value = ""; document.getElementById('txt-serial').value = ""; document.getElementById('txt-motivo').value = "";
-            ['input-fotoFrente', 'input-fotoSerial', 'input-fotoChip', 'input-fotoRegistro', 'input-foto4P'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
-            alternarCampos();
+            if (estado === 'SI') {
+                const file4 = document.getElementById('input-foto4').files;
+                const fileMenu = document.getElementById('input-fotoMenu').files;
+                paquete.serial = document.getElementById('txt-serial').value.trim();
+
+                if (file4 && fileMenu) {
+                    const r1 = new FileReader(); 
+                    r1.onload = function(e) { 
+                        paquete.foto4 = e.target.result;
+                        const r2 = new FileReader(); 
+                        r2.onload = function(ev) { paquete.fotoMenu = ev.target.result; enviarAServidorGoogle(); }; 
+                        r2.readAsDataURL(fileMenu);
+                    }; 
+                    r1.readAsDataURL(file4);
+                } else if (file4) {
+                    const r = new FileReader(); r.onload = (e) => { paquete.foto4 = e.target.result; enviarAServidorGoogle(); }; r.readAsDataURL(file4);
+                } else if (fileMenu) {
+                    const r = new FileReader(); r.onload = (e) => { paquete.fotoMenu = e.target.result; enviarAServidorGoogle(); }; r.readAsDataURL(fileMenu);
+                } else { enviarAServidorGoogle(); }
+            } else {
+                paquete.motivo = document.getElementById('txt-motivo').value;
+                if (!paquete.motivo.trim()) { 
+                    alert('Por favor, ingrese el motivo.'); 
+                    btn.disabled = false; btn.textContent = "Guardar Chequeo"; return; 
+                }
+                enviarAServidorGoogle();
+            }
         }
         function calcularAntiguos() {
             const lista = document.getElementById('lista-antiguos'); if (!lista) return; lista.innerHTML = '';
@@ -329,30 +303,57 @@
             });
         }
 
-        function parseFecha(str) { try { const [f, h] = str.split(' '); const [d, m, a] = f.split('/'); return new Date(`${a}-${m}-${d}T${h}`).getTime(); } catch(e) { return 0; } }
+        function parseFecha(str) { 
+            try { 
+                if (!str) return 0;
+                if (str.includes('/')) {
+                    const [f, h] = str.split(' '); const [d, m, a] = f.split('/'); 
+                    return new Date(`${a}-${m}-${d}T${h}`).getTime(); 
+                }
+                const parsed = Date.parse(str); return isNaN(parsed) ? 0 : parsed;
+            } catch(e) { return 0; } 
+        }
 
         function visualizarFotosParticular() {
-            const interno = document.getElementById('select-visor').value; const contenedor = document.getElementById('visor-contenedor'); const txtVacio = document.getElementById('visor-vacio');
-            if (interno && bd[interno] && bd[interno].estado === 'SI') {
-                document.getElementById('visor-serial-txt').textContent = bd[interno].serial || 'Sin número serial';
-                const fotosMapeo = [
-                    { id: 'visor-imgFrente', btn: 'btn-down-frente', src: bd[interno].fFrente }, { id: 'visor-imgSerial', btn: 'btn-down-serial', src: bd[interno].fSerial },
-                    { id: 'visor-imgChip', btn: 'btn-down-chip', src: bd[interno].fChip }, { id: 'visor-imgRegistro', btn: 'btn-down-registro', src: bd[interno].fRegistro },
-                    { id: 'visor-img4P', btn: 'btn-down-4p', src: bd[interno].f4P }
-                ];
-                fotosMapeo.forEach(item => {
-                    const el = document.getElementById(item.id);
-                    if (item.src) { el.src = formatearLinkMiniatura(item.src); document.getElementById(item.btn).style.display = 'inline-block'; } 
-                    else { el.src = ''; document.getElementById(item.btn).style.display = 'none'; }
-                });
+            const selectVisor = document.getElementById('select-visor');
+            const internoSeleccionado = String(selectVisor.value).trim();
+            const contenedor = document.getElementById('visor-contenedor'); const txtVacio = document.getElementById('visor-vacio');
+            const img4 = document.getElementById('visor-img4'); const imgMenu = document.getElementById('visor-imgMenu'); const txtSerial = document.getElementById('visor-serial-txt');
+
+            if (!internoSeleccionado) {
+                contenedor.classList.add('hidden'); txtVacio.classList.remove('hidden'); return;
+            }
+
+            let registro = null; const llaves = Object.keys(bd);
+            for (let i = 0; i < llaves.length; i++) {
+                if (String(llaves[i]).trim() === internoSeleccionado) {
+                    registro = bd[llaves[i]]; break;
+                }
+            }
+
+            if (registro && registro.estado === 'SI') {
+                txtSerial.textContent = registro.serial || 'Sin número serial'; 
+                img4.src = registro.foto4 || ''; imgMenu.src = registro.fotoMenu || '';
+                document.getElementById('btn-down-4').style.display = registro.foto4 ? 'inline-block' : 'none';
+                document.getElementById('btn-down-menu').style.display = registro.fotoMenu ? 'inline-block' : 'none';
                 contenedor.classList.remove('hidden'); txtVacio.classList.add('hidden');
             } else { contenedor.classList.add('hidden'); txtVacio.classList.remove('hidden'); }
         }
-
         function abrirFoto(tipo) {
-            const interno = document.getElementById('select-visor').value; if (!interno) return;
-            const campos = { 'frente': 'fFrente', 'serial': 'fSerial', 'chip': 'fChip', 'registro': 'fRegistro', '4p': 'f4P' };
-            const url = bd[interno][campos[tipo]]; if (url) window.open(url, '_blank'); 
+            const selectVisor = document.getElementById('select-visor');
+            const internoSeleccionado = String(selectVisor.value).trim();
+            if (!internoSeleccionado) return;
+
+            let registro = null; const llaves = Object.keys(bd);
+            for (let i = 0; i < llaves.length; i++) {
+                if (String(llaves[i]).trim() === internoSeleccionado) {
+                    registro = bd[llaves[i]]; break;
+                }
+            }
+            if (registro) {
+                const url = tipo === '4' ? registro.foto4 : registro.fotoMenu; 
+                if (url && url.startsWith('http')) window.open(url, '_blank'); 
+            }
         }
 
         function exportarPDF() {
@@ -361,13 +362,14 @@
             document.getElementById('print-titulo').textContent = `Reporte de Control - Línea ${lineaActiva}`;
             document.getElementById('fecha-reporte').textContent = 'Reporte emitido el: ' + new Date().toLocaleString('es-AR');
             let hayOperativos = false; let hayFallas = false;
+            
             internos.forEach(interno => {
                 const item = bd[interno]; if (item.estado === 'Sin chequear') return; const tr = document.createElement('tr');
                 if (item.estado === 'SI') {
                     hayOperativos = true;
-                    const armarMiniaturaPDF = (src, lbl) => { return src ? `<div class="print-thumb-container"><img src="${formatearLinkMiniatura(src)}" class="print-thumb"><span class="print-lbl-foto">${lbl}</span></div>` : '<div>-</div>'; };
-                    tr.innerHTML = `<td><b>Int ${interno}</b></td><td>${item.fecha}</td><td>${item.serial || '-'}</td>
-                        <td><div class="print-flex-thumbs">${armarMiniaturaPDF(item.fFrente, 'Frente')}${armarMiniaturaPDF(item.fSerial, 'Serial')}${armarMiniaturaPDF(item.fChip, 'Chip')}${armarMiniaturaPDF(item.fRegistro, 'Registro')}${armarMiniaturaPDF(item.f4P, '4P')}</div></td>`;
+                    const f4Html = item.foto4 ? `<img src="${item.foto4}" class="print-thumb">` : '<span>Sin foto 4P</span>';
+                    const fMenuHtml = item.fotoMenu ? `<img src="${item.fotoMenu}" class="print-thumb">` : '<span>Sin foto Menú</span>';
+                    tr.innerHTML = `<td><b>Interno ${interno}</b></td><td>${item.fecha}</td><td>${item.serial || '-'}</td><td><div class="print-flex-thumbs">${f4Html}${fMenuHtml}</div></td>`;
                     cuerpoSi.appendChild(tr);
                 } else if (item.estado === 'NO') {
                     hayFallas = true;
