@@ -84,12 +84,14 @@
         <button class="btn-volver" onclick="volverAlMenu()">← Cambiar de Línea</button>
         <div><span id="linea-activa-txt" class="lbl-linea-activa">Línea: Ninguna</span></div>
 
+        <!-- INDICADORES RÁPIDOS EN TIEMPO REAL -->
         <div class="grid-indicadores">
             <div class="card-ind ind-si">OPERATIVOS<span id="ind-cant-si">0</span></div>
             <div class="card-ind ind-no">CON FALLA<span id="ind-cant-no">0</span></div>
             <div class="card-ind ind-sin">PENDIENTES<span id="ind-cant-sin">0</span></div>
         </div>
 
+        <!-- 1. REGISTRAR CHEQUEO -->
         <div class="section">
             <h2>1. Registrar Chequeo</h2>
             <label for="select-interno">Número de Interno:</label>
@@ -102,7 +104,7 @@
                 <option value="SI">SÍ funciona</option>
                 <option value="NO">NO funciona</option>
             </select>
-            
+            <!-- CAMPOS SI FUNCIONA -->
             <div id="campos-si" class="hidden">
                 <label for="input-fotoFrente">Foto del Frente:</label>
                 <input type="file" id="input-fotoFrente" accept="image/*">
@@ -118,12 +120,15 @@
                 <input type="text" id="txt-serial" placeholder="Escriba el número serial aquí...">
             </div>
 
+            <!-- CAMPOS NO FUNCIONA -->
             <div id="campos-no" class="hidden">
                 <label for="txt-motivo">Motivo de la falla:</label>
                 <textarea id="txt-motivo" rows="3" placeholder="Escriba el motivo aquí..."></textarea>
             </div>
             <button id="btn-guardar" onclick="guardarChequeo()" style="margin-top:15px;">Guardar Chequeo</button>
         </div>
+
+        <!-- 2. VISOR PARTICULAR -->
         <div class="section">
             <h2>2. Consultar Fotos e Info de Interno</h2>
             <label for="select-visor">Seleccione Interno para consultar:</label>
@@ -143,7 +148,7 @@
             </div>
             <p id="visor-vacio" style="font-size: 13px; color: #666; text-align: center; margin-top: 5px;">Este interno no posee registros multimedia.</p>
         </div>
-
+        <!-- 3. REPORTES -->
         <div class="section">
             <h2>3. Alertas y Exportación</h2>
             <h3>Próximos a chequear (Más antiguos o sin revisar)</h3>
@@ -152,6 +157,7 @@
         </div>
     </div>
 
+    <!-- DOCUMENTO MAQUETADO DE IMPRESIÓN (PDF OCULTO) -->
     <div id="reporte-impresion">
         <h2 id="print-titulo">Reporte General de Control de Flota</h2>
         <p id="fecha-reporte"></p>
@@ -171,6 +177,7 @@
         </div>
     </div>
     <script>
+        // TU URL EJECUTABLE COMPLETA DE GOOGLE APPS SCRIPT
         const WEB_APP_URL = "https://google.com"; 
 
         let lineaActiva = ""; let bd = {}; let baseCompletaNube = {};
@@ -260,55 +267,46 @@
             if (estado === 'NO' && !paquete.motivo) { alert('Ingrese el motivo.'); btn.disabled = false; btn.textContent = "Guardar Chequeo"; return; }
 
             try {
+                // 1. Guardar la información de texto primero de forma primaria
                 await fetch(WEB_APP_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(paquete) });
+                
+                // 2. Si el estado es operativo, procesar la subida secuencial aislando lectores de memoria
                 if (estado === 'SI') {
                     const inputsFotos = [
                         { key: 'fFrente', id: 'input-fotoFrente' }, { key: 'fSerial', id: 'input-fotoSerial' },
                         { key: 'fChip', id: 'input-fotoChip' }, { key: 'fRegistro', id: 'input-fotoRegistro' }, { key: 'f4P', id: 'input-foto4P' }
                     ];
-                    const fotosParaSubir = inputsFotos.filter(item => { const inp = document.getElementById(item.id); return inp && inp.files.length > 0; });
+                    const fotosParaSubir = inputsFotos.filter(item => { const inp = document.getElementById(item.id); return inp && inp.files && inp.files.length > 0; });
+                    
                     if (fotosParaSubir.length > 0) {
                         let completadas = 0; btn.textContent = `⏳ Subiendo fotos (0 de ${fotosParaSubir.length})...`;
-                        const promesasSubida = fotosParaSubir.map(item => {
-                            return new Promise((resolve) => {
-                                const fileEl = document.getElementById(item.id);
-                                if (!fileEl || !fileEl.files || fileEl.files.length === 0) return resolve(true);
-                                const lector = new FileReader();
-                                // =========================================================================
-                                // REEMPLAZÁ ÚNICAMENTE EL BLOQUE DE LECTOR.ONLOAD ADENTRO DE GUARDARCHEQUEO
-                                // =========================================================================
+                        
+                        for (const item of fotosParaSubir) {
+                            const fileEl = document.getElementById(item.id);
+                            const archivo = fileEl.files[0];
 
-                                lector.onload = async (e) => {
+                            await new Promise((resolve) => {
+                                const lectorUnico = new FileReader();
+                                lectorUnico.onload = async (e) => {
                                     try {
-                                        // En lugar de enviar un JSON.stringify que el navegador bloquea en no-cors,
-                                        // usamos URLSearchParams para empaquetar los datos de forma segura.
                                         var parametrosFoto = new URLSearchParams();
                                         parametrosFoto.append('action', 'uploadPhoto');
                                         parametrosFoto.append('linea', lineaActiva);
                                         parametrosFoto.append('interno', interno);
                                         parametrosFoto.append('tipoFoto', item.key);
-                                        parametrosFoto.append('fileData', e.target.result); // Base64 completo
+                                        parametrosFoto.append('fileData', e.target.result);
 
                                         await fetch(WEB_APP_URL, {
-                                            method: "POST", 
-                                            mode: "no-cors", 
-                                            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                                            body: parametrosFoto
+                                            method: "POST", mode: "no-cors", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: parametrosFoto
                                         });
-
-                                        completadas++; 
-                                        btn.textContent = `⏳ Subiendo fotos (${completadas} de ${fotosParaSubir.length})...`;
-                                        resolve(true);
-                                    } catch (err) { 
-                                        console.error("Error al enviar foto:", err);
-                                        resolve(false); 
-                                    }
+                                        completadas++; btn.textContent = `⏳ Subiendo fotos (${completadas} de ${fotosParaSubir.length})...`;
+                                    } catch (err) { console.error("Error al transmitir archivo:", err); }
+                                    resolve(true);
                                 };
-
-                                lector.readAsDataURL(fileEl.files[0]);
+                                lectorUnico.onerror = () => { resolve(true); };
+                                lectorUnico.readAsDataURL(archivo);
                             });
-                        });
-                        await Promise.all(promesasSubida);
+                        }
                     }
                 }
                 alert('¡Chequeo guardado exitosamente!');
@@ -321,7 +319,6 @@
             ['input-fotoFrente', 'input-fotoSerial', 'input-fotoChip', 'input-fotoRegistro', 'input-foto4P'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
             alternarCampos();
         }
-
         function calcularAntiguos() {
             const lista = document.getElementById('lista-antiguos'); if (!lista) return; lista.innerHTML = '';
             const arreglados = Object.keys(bd).map(interno => ({ interno: interno, ...bd[interno], timestamp: bd[interno].fecha ? parseFecha(bd[interno].fecha) : 0 }));
