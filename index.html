@@ -14,12 +14,11 @@
         button:hover { background: #0056b3; }
         .btn-export { background: #28a745; }
         .btn-export:hover { background: #218838; }
-        .btn-download { background: #17a2b8; margin-top: 5px; font-size: 12px; padding: 6px; }
+        .btn-download { background: #17a2b8; margin-top: 5px; font-size: 12px; padding: 6px; width: 100%; }
         .btn-download:hover { background: #138496; }
         .hidden { display: none; }
         ul { list-style: none; padding: 0; }
         li { background: #eee; margin: 5px 0; padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; font-size: 14px; align-items: center; }
-        
         /* DISEÑO DE CONTADORES RÁPIDOS */
         .grid-indicadores { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
         .card-ind { text-align: center; padding: 12px; border-radius: 6px; color: white; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -47,6 +46,7 @@
         .btn-volver { background: #6c757d; font-size: 14px; padding: 8px; width: auto; display: inline-block; margin-bottom: 15px; }
         .btn-volver:hover { background: #5a6268; }
         .lbl-linea-activa { font-size: 16px; background: #e9ecef; padding: 8px; border-radius: 4px; display: inline-block; font-weight: bold; margin-bottom: 15px; color: #495057; border-left: 5px solid #007bff; }
+        
         #reporte-impresion { display: none; }
         @media print {
             body { background: white; color: black; max-width: 100%; margin: 0; padding: 0; }
@@ -66,6 +66,7 @@
 </head>
 <body>
     <h1>Control de Dispositivos - Nube</h1>
+    
     <div id="pantalla-menu" class="section">
         <h2>Seleccione la Línea de Colectivo</h2>
         <p style="font-size:14px; color:#666; text-align:center; margin-bottom:20px;">Los datos se consultan y guardan en la nube en tiempo real.</p>
@@ -78,18 +79,17 @@
         <button class="linea-btn morado" onclick="seleccionarLinea('514')">Línea 514</button>
         <button class="linea-btn verde-oscuro" onclick="seleccionarLinea('Varela')">Línea Varela</button>
     </div>
+
     <div id="pantalla-gestion" class="hidden">
         <button class="btn-volver" onclick="volverAlMenu()">← Cambiar de Línea</button>
         <div><span id="linea-activa-txt" class="lbl-linea-activa">Línea: Ninguna</span></div>
 
-        <!-- INDICADORES RÁPIDOS EN TIEMPO REAL -->
         <div class="grid-indicadores">
             <div class="card-ind ind-si">OPERATIVOS<span id="ind-cant-si">0</span></div>
             <div class="card-ind ind-no">CON FALLA<span id="ind-cant-no">0</span></div>
             <div class="card-ind ind-sin">PENDIENTES<span id="ind-cant-sin">0</span></div>
         </div>
 
-        <!-- 1. REGISTRAR CHEQUEO -->
         <div class="section">
             <h2>1. Registrar Chequeo</h2>
             <label for="select-interno">Número de Interno:</label>
@@ -103,7 +103,6 @@
                 <option value="NO">NO funciona</option>
             </select>
             
-            <!-- CAMPOS SI FUNCIONA (REFORMA: 5 FOTOS EXPLICITAS) -->
             <div id="campos-si" class="hidden">
                 <label for="input-fotoFrente">Foto del Frente:</label>
                 <input type="file" id="input-fotoFrente" accept="image/*">
@@ -123,13 +122,13 @@
                 <label for="txt-serial">Número Serial:</label>
                 <input type="text" id="txt-serial" placeholder="Escriba el número serial aquí...">
             </div>
+
             <div id="campos-no" class="hidden">
                 <label for="txt-motivo">Motivo de la falla:</label>
                 <textarea id="txt-motivo" rows="3" placeholder="Escriba el motivo aquí..."></textarea>
             </div>
             <button id="btn-guardar" onclick="guardarChequeo()" style="margin-top:15px;">Guardar Chequeo</button>
         </div>
-        <!-- 2. VISOR PARTICULAR (REFORMA: 5 MINIATURAS CORREGIDAS) -->
         <div class="section">
             <h2>2. Consultar Fotos e Info de Interno</h2>
             <label for="select-visor">Seleccione Interno para consultar:</label>
@@ -170,7 +169,6 @@
             <p id="visor-vacio" style="font-size: 13px; color: #666; text-align: center; margin-top: 5px;">Este interno no posee registros multimedia.</p>
         </div>
 
-        <!-- 3. REPORTES -->
         <div class="section">
             <h2>3. Alertas y Exportación</h2>
             <h3>Próximos a chequear (Más antiguos o sin revisar)</h3>
@@ -179,10 +177,10 @@
         </div>
     </div>
 
-    <!-- DOCUMENTO DE IMPRESIÓN (PDF CON 5 MINIATURAS) -->
     <div id="reporte-impresion">
         <h2 id="print-titulo" style="text-align: center; color: #000; margin-bottom: 5px;">Reporte General de Control de Flota</h2>
         <p id="fecha-reporte" style="text-align: center; font-size: 12px; color: #555; margin-bottom: 25px;"></p>
+        
         <div class="print-section">
             <h3 style="color: green; border-bottom: 2px solid green; padding-bottom: 3px;">Dispositivos que SÍ Funcionan</h3>
             <table>
@@ -197,6 +195,7 @@
                 <tbody id="tabla-si-cuerpo"></tbody>
             </table>
         </div>
+        
         <div class="print-section">
             <h3 style="color: red; border-bottom: 2px solid red; padding-bottom: 3px;">Dispositivos que NO Funcionan</h3>
             <table>
@@ -212,16 +211,14 @@
         </div>
     </div>
     <script>
-        // PEGA ACÁ TU URL LARGA DE GOOGLE APPS SCRIPT QUE TERMINA EN /exec
-        const WEB_APP_URL = "https://google.com"; // Reemplazar con la tuya real si difiere
+        const WEB_APP_URL = "https://google.com"; // REEMPLAZAR CON TU LINK DE WEB APP REAL
 
         let lineaActiva = "";
         let bd = {}; 
         let baseCompletaNube = {};
 
-        // CONVERTIDOR DE ENLACES DE DRIVE PARA QUE SE VEAN LAS IMAGENES EN MINIATURA
         function formatearLinkMiniatura(urlDrive) {
-            if (!urlDrive || urlDrive.indexOf("id=") === -1 && urlDrive.indexOf("/d/") === -1) return urlDrive;
+            if (!urlDrive || (urlDrive.indexOf("id=") === -1 && urlDrive.indexOf("/d/") === -1)) return urlDrive;
             let id = "";
             if (urlDrive.indexOf("id=") !== -1) { id = urlDrive.split("id=")[1].split("&")[0]; } 
             else { id = urlDrive.split("/d/")[1].split("/")[0]; }
@@ -263,7 +260,6 @@
             actualizarIndicadoresRapidos();
         }
 
-        // LÓGICA DE CONTADORES EN TIEMPO REAL
         function actualizarIndicadoresRapidos() {
             let si = 0, no = 0, sin = 0;
             Object.keys(bd).forEach(interno => {
@@ -300,51 +296,127 @@
             document.getElementById('campos-si').classList.toggle('hidden', estado !== 'SI');
             document.getElementById('campos-no').classList.toggle('hidden', estado !== 'NO');
         }
-        function guardarChequeo() {
+        async function guardarChequeo() {
             const interno = document.getElementById('select-interno').value;
             const estado = document.getElementById('select-estado').value;
             if (!interno || !estado) return alert('Por favor, seleccione interno y estado.');
             
-            const btn = document.getElementById('btn-guardar'); btn.disabled = true; btn.textContent = "⏳ Subiendo a la Nube...";
-            const ahora = new Date(); const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
+            const btn = document.getElementById('btn-guardar'); 
+            btn.disabled = true; 
+            btn.textContent = "⏳ Guardando datos básicos...";
             
-            // Estructura expandida para contener las 5 fotos
-            const paquete = { linea: lineaActiva, interno: interno, estado: estado, fecha: fechaString, serial: '', fFrente:'', fSerial:'', fChip:'', fRegistro:'', f4P:'', motivo: '' };
-
-            const enviarAServidorGoogle = async () => {
-                try {
-                    await fetch(WEB_APP_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(paquete) });
-                    alert('¡Chequeo guardado exitosamente en la nube!');
-                    setTimeout(async () => { await seleccionarLinea(lineaActiva); btn.disabled = false; btn.textContent = "Guardar Chequeo"; }, 2500);
-                } catch(err) { alert('Error de red.'); btn.disabled = false; btn.textContent = "Guardar Chequeo"; }
+            const ahora = new Date(); 
+            const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
+            
+            const paquete = { 
+                linea: lineaActiva, 
+                interno: interno, 
+                estado: estado, 
+                fecha: fechaString, 
+                serial: estado === 'SI' ? document.getElementById('txt-serial').value.trim() : '', 
+                motivo: estado === 'NO' ? document.getElementById('txt-motivo').value.trim() : '',
+                fFrente:'', fSerial:'', fChip:'', fRegistro:'', f4P:'' 
             };
 
-            if (estado === 'SI') {
-                paquete.serial = document.getElementById('txt-serial').value.trim();
-                const files = [
-                    { key: 'fFrente', id: 'input-fotoFrente' }, { key: 'fSerial', id: 'input-fotoSerial' },
-                    { key: 'fChip', id: 'input-fotoChip' }, { key: 'fRegistro', id: 'input-fotoRegistro' },
-                    { key: 'f4P', id: 'input-foto4P' }
-                ];
+            if (estado === 'NO' && !paquete.motivo) {
+                alert('Ingrese el motivo de la falla.');
+                btn.disabled = false;
+                btn.textContent = "Guardar Chequeo";
+                return;
+            }
+
+            try {
+                // 1. Guardar primero el texto plano (Rápido y liviano)
+                await fetch(WEB_APP_URL, { 
+                    method: "POST", 
+                    mode: "no-cors", 
+                    headers: { "Content-Type": "text/plain" }, 
+                    body: JSON.stringify(paquete) 
+                });
+
+                // 2. Si funciona, procesamos las imágenes de manera fragmentada e individual
+                if (estado === 'SI') {
+                    const inputsFotos = [
+                        { key: 'fFrente', id: 'input-fotoFrente', nombre: 'Frente' },
+                        { key: 'fSerial', id: 'input-fotoSerial', nombre: 'Serial' },
+                        { key: 'fChip', id: 'input-fotoChip', nombre: 'Chip' },
+                        { key: 'fRegistro', id: 'input-fotoRegistro', nombre: 'Registro' },
+                        { key: 'f4P', id: 'input-foto4P', nombre: '4 Pantallas' }
+                    ];
+
+                    const fotosParaSubir = inputsFotos.filter(item => {
+                        const input = document.getElementById(item.id);
+                        return input && input.files.length > 0;
+                    });
+
+                    if (fotosParaSubir.length > 0) {
+                        let completadas = 0;
+                        btn.textContent = `⏳ Subiendo fotos (0 de ${fotosParaSubir.length})...`;
+
+                        const promesasSubida = fotosParaSubir.map(item => {
+                            return new Promise((resolve) => {
+                                const fileInput = document.getElementById(item.id).files[0];
+                                const lector = new FileReader();
+
+                                lector.onload = async (e) => {
+                                    try {
+                                        const paqueteFoto = {
+                                            action: 'uploadPhoto',
+                                            linea: lineaActiva,
+                                            interno: interno,
+                                            tipoFoto: item.key,
+                                            fileData: e.target.result
+                                        };
+
+                                        await fetch(WEB_APP_URL, {
+                                            method: "POST",
+                                            mode: "no-cors",
+                                            headers: { "Content-Type": "text/plain" },
+                                            body: JSON.stringify(paqueteFoto)
+                                        });
+
+                                        completadas++;
+                                        btn.textContent = `⏳ Subiendo fotos (${completadas} de ${fotosParaSubir.length})...`;
+                                        resolve(true);
+                                    } catch (errSubida) {
+                                        console.error(`Error en foto ${item.nombre}:`, errSubida);
+                                        resolve(false);
+                                    }
+                                };
+                                lector.readAsDataURL(fileInput);
+                            });
+                        });
+
+                        await Promise.all(promesasSubida);
+                    }
+                }
+
+                alert('¡Chequeo guardado exitosamente en la nube!');
                 
-                let indice = 0;
-                const procesarSiguienteFoto = () => {
-                    if (indice >= files.length) { enviarAServidorGoogle(); return; }
-                    const item = files[indice]; const fileInput = document.getElementById(item.id).files[0];
-                    if (fileInput) {
-                        const r = new FileReader();
-                        r.onload = (e) => { paquete[item.key] = e.target.result; indice++; procesarSiguienteFoto(); };
-                        r.readAsDataURL(fileInput);
-                    } else { indice++; procesarSiguienteFoto(); }
-                };
-                procesarSiguienteFoto();
-            } else {
-                paquete.motivo = document.getElementById('txt-motivo').value;
-                if (!paquete.motivo.trim()) { alert('Ingrese el motivo.'); btn.disabled = false; btn.textContent = "Guardar Chequeo"; return; }
-                enviarAServidorGoogle();
+                setTimeout(async () => { 
+                    await seleccionarLinea(lineaActiva); 
+                    limpiarCamposFormulario();
+                    btn.disabled = false; 
+                    btn.textContent = "Guardar Chequeo"; 
+                }, 1500);
+
+            } catch(err) {
+                alert('Error de red al conectar con la nube.');
+                btn.disabled = false; 
+                btn.textContent = "Guardar Chequeo";
             }
         }
 
+        function limpiarCamposFormulario() {
+            document.getElementById('select-estado').value = "";
+            document.getElementById('txt-serial').value = "";
+            document.getElementById('txt-motivo').value = "";
+            ['input-fotoFrente', 'input-fotoSerial', 'input-fotoChip', 'input-fotoRegistro', 'input-foto4P'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.value = "";
+            });
+            alternarCampos();
+        }
         function calcularAntiguos() {
             const lista = document.getElementById('lista-antiguos'); if (!lista) return; lista.innerHTML = '';
             const arreglados = Object.keys(bd).map(interno => ({ interno: interno, ...bd[interno], timestamp: bd[interno].fecha ? parseFecha(bd[interno].fecha) : 0 }));
@@ -362,7 +434,6 @@
             if (interno && bd[interno] && bd[interno].estado === 'SI') {
                 document.getElementById('visor-serial-txt').textContent = bd[interno].serial || 'Sin número serial';
                 
-                // Mapear y formatear miniaturas con los enlaces convertidos de Google
                 const fotosMapeo = [
                     { id: 'visor-imgFrente', btn: 'btn-down-frente', src: bd[interno].fFrente },
                     { id: 'visor-imgSerial', btn: 'btn-down-serial', src: bd[interno].fSerial },
@@ -397,11 +468,9 @@
                 const item = bd[interno]; if (item.estado === 'Sin chequear') return; const tr = document.createElement('tr');
                 if (item.estado === 'SI') {
                     hayOperativos = true;
-                    
                     const armarMiniaturaPDF = (src, lbl) => {
                         return src ? `<div class="print-thumb-container"><img src="${formatearLinkMiniatura(src)}" class="print-thumb"><span class="print-lbl-foto">${lbl}</span></div>` : '<div>-</div>';
                     };
-                    
                     tr.innerHTML = `
                         <td><b>Int ${interno}</b></td>
                         <td>${item.fecha}</td>
