@@ -274,16 +274,37 @@
                                 const fileEl = document.getElementById(item.id);
                                 if (!fileEl || !fileEl.files || fileEl.files.length === 0) return resolve(true);
                                 const lector = new FileReader();
+                                // =========================================================================
+                                // REEMPLAZÁ ÚNICAMENTE EL BLOQUE DE LECTOR.ONLOAD ADENTRO DE GUARDARCHEQUEO
+                                // =========================================================================
+
                                 lector.onload = async (e) => {
                                     try {
+                                        // En lugar de enviar un JSON.stringify que el navegador bloquea en no-cors,
+                                        // usamos URLSearchParams para empaquetar los datos de forma segura.
+                                        var parametrosFoto = new URLSearchParams();
+                                        parametrosFoto.append('action', 'uploadPhoto');
+                                        parametrosFoto.append('linea', lineaActiva);
+                                        parametrosFoto.append('interno', interno);
+                                        parametrosFoto.append('tipoFoto', item.key);
+                                        parametrosFoto.append('fileData', e.target.result); // Base64 completo
+
                                         await fetch(WEB_APP_URL, {
-                                            method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain" },
-                                            body: JSON.stringify({ action: 'uploadPhoto', linea: lineaActiva, interno: interno, tipoFoto: item.key, fileData: e.target.result })
+                                            method: "POST", 
+                                            mode: "no-cors", 
+                                            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                                            body: parametrosFoto
                                         });
-                                        completadas++; btn.textContent = `⏳ Subiendo fotos (${completadas} de ${fotosParaSubir.length})...`;
+
+                                        completadas++; 
+                                        btn.textContent = `⏳ Subiendo fotos (${completadas} de ${fotosParaSubir.length})...`;
                                         resolve(true);
-                                    } catch (err) { resolve(false); }
+                                    } catch (err) { 
+                                        console.error("Error al enviar foto:", err);
+                                        resolve(false); 
+                                    }
                                 };
+
                                 lector.readAsDataURL(fileEl.files[0]);
                             });
                         });
