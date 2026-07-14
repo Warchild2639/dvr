@@ -63,6 +63,7 @@
         <button class="linea-btn morado" onclick="seleccionarLinea('514')">Línea 514</button>
         <button class="linea-btn verde-oscuro" onclick="seleccionarLinea('Varela')">Línea Varela</button>
     </div>
+
     <div id="pantalla-gestion" class="hidden">
         <button class="btn-volver" onclick="volverAlMenu()">← Cambiar de Línea</button>
         <div><span id="linea-activa-txt" class="lbl-linea-activa">Línea: Ninguna</span></div>
@@ -122,6 +123,7 @@
             <button class="btn-export" onclick="exportarPDF()">Exportar Reporte Completo a PDF</button>
         </div>
     </div>
+
     <div id="reporte-impresion">
         <h2 id="print-titulo" style="text-align: center; color: #000; margin-bottom: 5px;">Reporte General de Control de Flota</h2>
         <p id="fecha-reporte" style="text-align: center; font-size: 12px; color: #555; margin-bottom: 25px;"></p>
@@ -140,7 +142,7 @@
             </table>
         </div>
         <div class="print-section">
-            <h3 style="color: red; border-bottom: 2px solid red; padding-bottom: 3px;">Dispositivos que NO Funcionan</h3>
+            <h3>Dispositivos que NO Funcionan</h3>
             <table>
                 <thead>
                     <tr>
@@ -154,7 +156,7 @@
         </div>
     </div>
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyCFOGNDwgHTdxQFA9D6s1CLgtdg70jG-GkjMXBrYoYLbJscDFQ96d8mvik2k8tpxWE/exec";
+        const WEB_APP_URL = "https://google.com";
 
         let lineaActiva = "";
         let bd = {}; 
@@ -180,7 +182,6 @@
                 document.body.appendChild(script);
             });
         }
-
         async function seleccionarLinea(nombreLinea) {
             lineaActiva = nombreLinea;
             document.getElementById('linea-activa-txt').textContent = "Cargando Línea " + lineaActiva + "...";
@@ -213,6 +214,7 @@
             document.getElementById('pantalla-gestion').classList.add('hidden');
             document.getElementById('pantalla-menu').classList.remove('hidden');
         }
+
         function actualizarSelects() {
             const selectForm = document.getElementById('select-interno');
             const selectVisor = document.getElementById('select-visor');
@@ -231,67 +233,81 @@
             document.getElementById('campos-si').classList.toggle('hidden', estado !== 'SI');
             document.getElementById('campos-no').classList.toggle('hidden', estado !== 'NO');
         }
-
-        function guardarChequeo() {
+        async function guardarChequeo() {
             const interno = document.getElementById('select-interno').value;
             const estado = document.getElementById('select-estado').value;
             if (!interno || !estado) return alert('Por favor, seleccione interno y estado.');
             
             const btn = document.getElementById('btn-guardar');
             btn.disabled = true;
-            btn.textContent = "⏳ Subiendo a la Nube...";
+            btn.textContent = "⏳ Guardando datos básicos...";
 
             const ahora = new Date(); 
             const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
-            const paquete = { linea: lineaActiva, interno: interno, estado: estado, fecha: fechaString, serial: '', foto4: '', fotoMenu: '', motivo: '' };
-
-            const enviarAServidorGoogle = async () => {
-                try {
-                    await fetch(WEB_APP_URL, { 
-                        method: "POST", 
-                        mode: "no-cors",
-                        headers: { "Content-Type": "text/plain" }, 
-                        body: JSON.stringify(paquete) 
-                    });
-                    alert('¡Chequeo enviado exitosamente a la nube!');
-                    setTimeout(async () => {
-                        await seleccionarLinea(lineaActiva);
-                        btn.disabled = false;
-                        btn.textContent = "Guardar Chequeo";
-                    }, 2500);
-                } catch(err) { 
-                    alert('Error de red al intentar conectar con Google.'); 
-                    btn.disabled = false; btn.textContent = "Guardar Chequeo";
-                }
+            
+            const paquete = { 
+                linea: lineaActiva, interno: interno, estado: estado, fecha: fechaString, 
+                serial: estado === 'SI' ? document.getElementById('txt-serial').value.trim() : '', 
+                motivo: estado === 'NO' ? document.getElementById('txt-motivo').value.trim() : '',
+                foto4: '', fotoMenu: '' 
             };
 
-            if (estado === 'SI') {
-                const file4 = document.getElementById('input-foto4').files;
-                const fileMenu = document.getElementById('input-fotoMenu').files;
-                paquete.serial = document.getElementById('txt-serial').value.trim();
-
-                if (file4 && fileMenu) {
-                    const r1 = new FileReader(); 
-                    r1.onload = function(e) { 
-                        paquete.foto4 = e.target.result;
-                        const r2 = new FileReader(); 
-                        r2.onload = function(ev) { paquete.fotoMenu = ev.target.result; enviarAServidorGoogle(); }; 
-                        r2.readAsDataURL(fileMenu);
-                    }; 
-                    r1.readAsDataURL(file4);
-                } else if (file4) {
-                    const r = new FileReader(); r.onload = (e) => { paquete.foto4 = e.target.result; enviarAServidorGoogle(); }; r.readAsDataURL(file4);
-                } else if (fileMenu) {
-                    const r = new FileReader(); r.onload = (e) => { paquete.fotoMenu = e.target.result; enviarAServidorGoogle(); }; r.readAsDataURL(fileMenu);
-                } else { enviarAServidorGoogle(); }
-            } else {
-                paquete.motivo = document.getElementById('txt-motivo').value;
-                if (!paquete.motivo.trim()) { 
-                    alert('Por favor, ingrese el motivo.'); 
-                    btn.disabled = false; btn.textContent = "Guardar Chequeo"; return; 
-                }
-                enviarAServidorGoogle();
+            if (estado === 'NO' && !paquete.motivo) { 
+                alert('Por favor, ingrese el motivo de la falla.'); 
+                btn.disabled = false; btn.textContent = "Guardar Chequeo"; return; 
             }
+
+            try {
+                // 1. Enviar primero la información de texto obligatoria (Liviana)
+                await fetch(WEB_APP_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(paquete) });
+
+                // 2. Si funciona, subir cada foto por separado para no saturar los límites de Google
+                if (estado === 'SI') {
+                    const archivosMapeo = [
+                        { id: 'input-foto4', key: 'foto4', nombre: '4 Pantallas' },
+                        { id: 'input-fotoMenu', key: 'input-fotoMenu', nombre: 'Menú Interno' }
+                    ];
+
+                    for (const item of archivosMapeo) {
+                        const inputElement = document.getElementById(item.id);
+                        if (inputElement && inputElement.files && inputElement.files.length > 0) {
+                            const archivoIndividual = inputElement.files[0]; // Extracción indexada individual
+                            btn.textContent = `⏳ Subiendo foto: ${item.nombre}...`;
+
+                            await new Promise((resolve) => {
+                                const lectorAislado = new FileReader();
+                                lectorAislado.onload = async (e) => {
+                                    try {
+                                        const parametrosFoto = new URLSearchParams();
+                                        parametrosFoto.append('action', 'uploadPhoto');
+                                        parametrosFoto.append('linea', lineaActiva);
+                                        parametrosFoto.append('interno', interno);
+                                        parametrosFoto.append('tipoFoto', item.key);
+                                        parametrosFoto.append('fileData', e.target.result);
+
+                                        await fetch(WEB_APP_URL, {
+                                            method: "POST", mode: "no-cors", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: parametrosFoto
+                                        });
+                                    } catch (errFoto) { console.error(`Error al transmitir ${item.nombre}:`, errFoto); }
+                                    resolve(true);
+                                };
+                                lectorAislado.onerror = () => { resolve(true); };
+                                lectorAislado.readAsDataURL(archivoIndividual);
+                            });
+                        }
+                    }
+                }
+
+                alert('¡Chequeo y multimedia procesados con éxito!');
+                setTimeout(async () => {
+                    await seleccionarLinea(lineaActiva);
+                    document.getElementById('select-estado').value = ""; document.getElementById('txt-serial').value = ""; document.getElementById('txt-motivo').value = "";
+                    ['input-foto4', 'input-fotoMenu'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+                    alternarCampos();
+                    btn.disabled = false; btn.textContent = "Guardar Chequeo";
+                }, 1500);
+
+            } catch(err) { alert('Error de red al conectar con Google.'); btn.disabled = false; btn.textContent = "Guardar Chequeo"; }
         }
         function calcularAntiguos() {
             const lista = document.getElementById('lista-antiguos'); if (!lista) return; lista.innerHTML = '';
@@ -314,46 +330,28 @@
             } catch(e) { return 0; } 
         }
 
+        function abrirFoto(tipo) {
+            const selectVisor = document.getElementById('select-visor'); const internoSeleccionado = String(selectVisor.value).trim(); if (!internoSeleccionado) return;
+            let registro = null; const llaves = Object.keys(bd);
+            for (let i = 0; i < llaves.length; i++) { if (String(llaves[i]).trim() === internoSeleccionado) { registro = bd[llaves[i]]; break; } }
+            if (registro) { const url = tipo === '4' ? registro.foto4 : registro.fotoMenu; if (url && url.startsWith('http')) window.open(url, '_blank'); }
+        }
+
         function visualizarFotosParticular() {
-            const selectVisor = document.getElementById('select-visor');
-            const internoSeleccionado = String(selectVisor.value).trim();
+            const selectVisor = document.getElementById('select-visor'); const internoSeleccionado = String(selectVisor.value).trim();
             const contenedor = document.getElementById('visor-contenedor'); const txtVacio = document.getElementById('visor-vacio');
             const img4 = document.getElementById('visor-img4'); const imgMenu = document.getElementById('visor-imgMenu'); const txtSerial = document.getElementById('visor-serial-txt');
 
-            if (!internoSeleccionado) {
-                contenedor.classList.add('hidden'); txtVacio.classList.remove('hidden'); return;
-            }
-
+            if (!internoSeleccionado) { contenedor.classList.add('hidden'); txtVacio.classList.remove('hidden'); return; }
             let registro = null; const llaves = Object.keys(bd);
-            for (let i = 0; i < llaves.length; i++) {
-                if (String(llaves[i]).trim() === internoSeleccionado) {
-                    registro = bd[llaves[i]]; break;
-                }
-            }
+            for (let i = 0; i < llaves.length; i++) { if (String(llaves[i]).trim() === internoSeleccionado) { registro = bd[llaves[i]]; break; } }
 
             if (registro && registro.estado === 'SI') {
-                txtSerial.textContent = registro.serial || 'Sin número serial'; 
-                img4.src = registro.foto4 || ''; imgMenu.src = registro.fotoMenu || '';
+                txtSerial.textContent = registro.serial || 'Sin número serial'; img4.src = registro.foto4 || ''; imgMenu.src = registro.fotoMenu || '';
                 document.getElementById('btn-down-4').style.display = registro.foto4 ? 'inline-block' : 'none';
                 document.getElementById('btn-down-menu').style.display = registro.fotoMenu ? 'inline-block' : 'none';
                 contenedor.classList.remove('hidden'); txtVacio.classList.add('hidden');
             } else { contenedor.classList.add('hidden'); txtVacio.classList.remove('hidden'); }
-        }
-        function abrirFoto(tipo) {
-            const selectVisor = document.getElementById('select-visor');
-            const internoSeleccionado = String(selectVisor.value).trim();
-            if (!internoSeleccionado) return;
-
-            let registro = null; const llaves = Object.keys(bd);
-            for (let i = 0; i < llaves.length; i++) {
-                if (String(llaves[i]).trim() === internoSeleccionado) {
-                    registro = bd[llaves[i]]; break;
-                }
-            }
-            if (registro) {
-                const url = tipo === '4' ? registro.foto4 : registro.fotoMenu; 
-                if (url && url.startsWith('http')) window.open(url, '_blank'); 
-            }
         }
 
         function exportarPDF() {
