@@ -157,14 +157,12 @@
         </div>
     </div>
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyCFOGNDwgHTdxQFA9D6s1CLgtdg70jG-GkjMXBrYoYLbJscDFQ96d8mvik2k8tpxWE/exec
-";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyCFOGNDwgHTdxQFA9D6s1CLgtdg70jG-GkjMXBrYoYLbJscDFQ96d8mvik2k8tpxWE/exec";
 
         let lineaActiva = "";
         let bd = {}; 
         let baseCompletaNube = {};
 
-        // TRANSMISIÓN POR CANAL EN INYECCIÓN DINÁMICA (JSONP): EVITA EL TRABE EN PANTALLA DE INICIO
         function cargarDatosDesdeNube() {
             return new Promise((resolve) => {
                 const nombreCallback = "jsonp_callback_" + Date.now();
@@ -253,83 +251,105 @@
             const ahora = new Date(); 
             const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
             
-            // Contenedor FormData para empaquetar el texto base imitando un formulario físico
-            const paqueteTexto = new FormData();
-            paqueteTexto.append('action', 'saveText');
-            paqueteTexto.append('linea', lineaActiva);
-            paqueteTexto.append('interno', interno);
-            paqueteTexto.append('estado', estado);
-            paqueteTexto.append('fecha', fechaString);
-            paqueteTexto.append('serial', estado === 'SI' ? document.getElementById('txt-serial').value.trim() : '');
-            paqueteTexto.append('motivo', estado === 'NO' ? document.getElementById('txt-motivo').value.trim() : '');
+            // Paquete base de texto empaquetado para URL
+            const paquete = { 
+                action: 'saveText',
+                linea: lineaActiva, 
+                interno: interno, 
+                estado: estado, 
+                fecha: fechaString, 
+                serial: estado === 'SI' ? document.getElementById('txt-serial').value.trim() : '', 
+                motivo: estado === 'NO' ? document.getElementById('txt-motivo').value.trim() : ''
+            };
 
-            if (estado === 'NO' && !document.getElementById('txt-motivo').value.trim()) { 
+            if (estado === 'NO' && !paquete.motivo) { 
                 alert('Por favor, ingrese el motivo de la falla.'); 
                 btn.disabled = false; btn.textContent = "Guardar Chequeo"; return; 
             }
 
-            try {
-                // 1. Enviar el texto base forzando al navegador a seguir la redirección nativa de Google (Evita el "Error de red")
-                btn.textContent = "⏳ Registrando en base de datos...";
-                await fetch(WEB_APP_URL, {
-                    method: "POST",
-                    mode: "cors",
-                    redirect: "follow", 
-                    body: paqueteTexto
+            // MOTOR INTEGRADO: Envía cualquier dato inyectando <script> dinámicos (Inmune a errores de CORS)
+            const enviarViaJSONP = (parametros) => {
+                return new Promise((resolve) => {
+                    const nombreCallback = "callback_" + Math.floor(Math.random() * 1000000);
+                    
+                    window[nombreCallback] = function(respuesta) {
+                        delete window[nombreCallback];
+                        document.body.removeChild(scriptGl);
+                        resolve(respuesta);
+                    };
+
+                    const queryParams = new URLSearchParams(parametros).toString();
+                    const scriptGl = document.createElement("script");
+                    scriptGl.src = WEB_APP_URL + "?" + queryParams + "&callback=" + nombreCallback + "&_t=" + Date.now();
+                    
+                    scriptGl.onerror = function() {
+                        delete window[nombreCallback];
+                        try { document.body.removeChild(scriptGl); } catch(e){}
+                        resolve({ status: "error" });
+                    };
+                    
+                    document.body.appendChild(scriptGl);
                 });
+            };
 
-                // 2. Si el estado es operativo, procesar secuencialmente las fotos aisladas de a una
-                if (estado === 'SI') {
-                    const archivosMapeo = [
-                        { id: 'input-foto4', key: 'foto4', nombre: '4 Pantallas' },
-                        { id: 'input-fotoMenu', key: 'input-fotoMenu', nombre: 'Menú Interno' }
-                    ];
+            // 1. Guardar primero el texto base de forma liviana mediante JSONP
+            btn.textContent = "⏳ Registrando en base de datos...";
+            await enviarViaJSONP(paquete);
 
-                    for (const item of archivosMapeo) {
-                        const inputElement = document.getElementById(item.id);
-                        if (inputElement && inputElement.files && inputElement.files.length > 0) {
-                            const archivoIndividual = inputElement.files[0]; // Extracción física indexada estricta
-                            btn.textContent = `⏳ Leyendo: ${item.nombre}...`;
+            // 2. Si el estado es operativo, subir secuencialmente las imágenes individuales aisladas
+            if (estado === 'SI') {
+                const archivosMapeo = [
+                    { id: 'input-foto4', key: 'foto4', nombre: '4 Pantallas' },
+                    { id: 'input-fotoMenu', key: 'input-fotoMenu', nombre: 'Menú Interno' }
+                ];
 
-                            await new Promise((resolve) => {
-                                const lectorAislado = new FileReader();
-                                lectorAislado.onload = async (e) => {
-                                    try {
-                                        btn.textContent = `⏳ Transmitiendo: ${item.nombre}...`;
-                                        
-                                        const paqueteFoto = new FormData();
-                                        paqueteFoto.append('action', 'uploadPhoto');
-                                        paqueteFoto.append('linea', lineaActiva);
-                                        paqueteFoto.append('interno', interno);
-                                        paqueteFoto.append('tipoFoto', item.key);
-                                        paqueteFoto.append('fileData', e.target.result); // Base64 individual limpio
+                for (const item of archivosMapeo) {
+                    const inputElement = document.getElementById(item.id);
+                    
+                    // Extracción física indexada estricta [0] para evitar roturas de memoria
+                    if (inputElement && inputElement.files && inputElement.files.length > 0) {
+                        const archivoIndividual = inputElement.files[0]; 
+                        btn.textContent = `⏳ Leyendo: ${item.nombre}...`;
 
-                                        await fetch(WEB_APP_URL, {
-                                            method: "POST",
-                                            mode: "cors",
-                                            redirect: "follow",
-                                            body: paqueteFoto
-                                        });
-                                    } catch (errFoto) { console.error(`Error al transmitir ${item.nombre}:`, errFoto); }
-                                    resolve(true);
-                                };
-                                lectorAislado.onerror = () => { resolve(true); };
-                                lectorAislado.readAsDataURL(archivoIndividual);
-                            });
-                        }
+                        await new Promise((resolve) => {
+                            const lectorAislado = new FileReader();
+                            
+                            lectorAislado.onload = async (e) => {
+                                btn.textContent = `⏳ Transmitiendo: ${item.nombre}...`;
+                                
+                                // Enviar el Base64 codificado como parámetro GET limpio a través de JSONP
+                                await enviarViaJSONP({
+                                    action: 'uploadPhoto',
+                                    linea: lineaActiva,
+                                    interno: interno,
+                                    tipoFoto: item.key,
+                                    fileData: encodeURIComponent(e.target.result) // Formateo seguro para internet
+                                });
+                                
+                                resolve(true);
+                            };
+
+                            lectorAislado.onerror = () => { resolve(true); };
+                            lectorAislado.readAsDataURL(archivoIndividual);
+                        });
                     }
                 }
+            }
 
-                alert('¡Chequeo y registros multimedia guardados exitosamente!');
-                setTimeout(async () => {
-                    await seleccionarLinea(lineaActiva);
-                    document.getElementById('select-estado').value = ""; document.getElementById('txt-serial').value = ""; document.getElementById('txt-motivo').value = "";
-                    ['input-foto4', 'input-fotoMenu'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
-                    alternarCampos();
-                    btn.disabled = false; btn.textContent = "Guardar Chequeo";
-                }, 1500);
-
-            } catch(err) { alert('Error de red al conectar con Google.'); btn.disabled = false; btn.textContent = "Guardar Chequeo"; }
+            alert('¡Chequeo y registros multimedia guardados exitosamente!');
+            
+            // Limpieza local de campos e interfaz
+            setTimeout(async () => {
+                await seleccionarLinea(lineaActiva);
+                document.getElementById('select-estado').value = ""; 
+                document.getElementById('txt-serial').value = ""; 
+                document.getElementById('txt-motivo').value = "";
+                ['input-foto4', 'input-fotoMenu'].forEach(id => { 
+                    const el = document.getElementById(id); if (el) el.value = ""; 
+                });
+                alternarCampos();
+                btn.disabled = false; btn.textContent = "Guardar Chequeo";
+            }, 1500);
         }
         function calcularAntiguos() {
             const lista = document.getElementById('lista-antiguos'); if (!lista) return; lista.innerHTML = '';
