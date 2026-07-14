@@ -271,7 +271,7 @@
                     for (const item of archivosMapeo) {
                         const inputElement = document.getElementById(item.id);
                         if (inputElement && inputElement.files && inputElement.files.length > 0) {
-                            const archivoIndividual = inputElement.files[0]; // Extracción indexada individual
+                            const archivoIndividual = inputElement.files[0]; // FIJACIÓN DE ÍNDICE DETERMINANTE [0]
                             btn.textContent = `⏳ Subiendo foto: ${item.nombre}...`;
 
                             await new Promise((resolve) => {
