@@ -157,18 +157,35 @@
         </div>
     </div>
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyCFOGNDwgHTdxQFA9D6s1CLgtdg70jG-GkjMXBrYoYLbJscDFQ96d8mvik2k8tpxWE/exec
-";
+        const WEB_APP_URL = "https://google.com";
 
         let lineaActiva = "";
         let bd = {}; 
         let baseCompletaNube = {};
 
-        async function cargarDatosDesdeNube() {
-            try {
-                const res = await fetch(`${WEB_APP_URL}?_nocache=${Date.now()}`);
-                if (res.ok) { baseCompletaNube = await res.json(); }
-            } catch(e) { console.error("Error leyendo de la nube", e); }
+        // TRANSMISIÓN POR CANAL EN INYECCIÓN DINÁMICA (JSONP): EVITA EL TRABE EN PANTALLA DE INICIO
+        function cargarDatosDesdeNube() {
+            return new Promise((resolve) => {
+                const nombreCallback = "jsonp_callback_" + Date.now();
+                
+                window[nombreCallback] = function(datos) {
+                    baseCompletaNube = datos;
+                    delete window[nombreCallback];
+                    document.body.removeChild(script);
+                    resolve();
+                };
+
+                const script = document.createElement("script");
+                script.src = WEB_APP_URL + "?action=readDB&callback=" + nombreCallback + "&_nocache=" + Date.now();
+                
+                script.onerror = function() {
+                    console.error("Error cargando datos por fallas de red externa.");
+                    delete window[nombreCallback];
+                    try { document.body.removeChild(script); } catch(e){}
+                    resolve();
+                };
+                document.body.appendChild(script);
+            });
         }
 
         async function seleccionarLinea(nombreLinea) {
@@ -235,7 +252,7 @@
             const ahora = new Date(); 
             const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
             
-            // Contenedor FormData para el texto base
+            // Contenedor FormData para empaquetar el texto base imitando un formulario físico
             const paqueteTexto = new FormData();
             paqueteTexto.append('action', 'saveText');
             paqueteTexto.append('linea', lineaActiva);
@@ -251,16 +268,16 @@
             }
 
             try {
-                // 1. Enviar el texto base (Agregando "redirect: 'follow'" para evitar el error de red)
+                // 1. Enviar el texto base forzando al navegador a seguir la redirección nativa de Google (Evita el "Error de red")
                 btn.textContent = "⏳ Registrando en base de datos...";
                 await fetch(WEB_APP_URL, {
                     method: "POST",
                     mode: "cors",
-                    redirect: "follow",
+                    redirect: "follow", 
                     body: paqueteTexto
                 });
 
-                // 2. Si el estado es operativo, procesar secuencialmente el bucle de fotos
+                // 2. Si el estado es operativo, procesar secuencialmente las fotos aisladas de a una
                 if (estado === 'SI') {
                     const archivosMapeo = [
                         { id: 'input-foto4', key: 'foto4', nombre: '4 Pantallas' },
@@ -270,7 +287,7 @@
                     for (const item of archivosMapeo) {
                         const inputElement = document.getElementById(item.id);
                         if (inputElement && inputElement.files && inputElement.files.length > 0) {
-                            const archivoIndividual = inputElement.files[0]; // Extracción indexada correcta
+                            const archivoIndividual = inputElement.files[0]; // Extracción física indexada estricta
                             btn.textContent = `⏳ Leyendo: ${item.nombre}...`;
 
                             await new Promise((resolve) => {
@@ -284,9 +301,8 @@
                                         paqueteFoto.append('linea', lineaActiva);
                                         paqueteFoto.append('interno', interno);
                                         paqueteFoto.append('tipoFoto', item.key);
-                                        paqueteFoto.append('fileData', e.target.result);
+                                        paqueteFoto.append('fileData', e.target.result); // Base64 individual limpio
 
-                                        // Enviar la foto de forma individual con redirección permitida
                                         await fetch(WEB_APP_URL, {
                                             method: "POST",
                                             mode: "cors",
@@ -312,11 +328,7 @@
                     btn.disabled = false; btn.textContent = "Guardar Chequeo";
                 }, 1500);
 
-            } catch(err) { 
-                console.error("Detalle del error de red:", err);
-                alert('Error de red al conectar con Google. Verifique los permisos del despliegue en Google Apps Script.'); 
-                btn.disabled = false; btn.textContent = "Guardar Chequeo"; 
-            }
+            } catch(err) { alert('Error de red al conectar con Google.'); btn.disabled = false; btn.textContent = "Guardar Chequeo"; }
         }
         function calcularAntiguos() {
             const lista = document.getElementById('lista-antiguos'); if (!lista) return; lista.innerHTML = '';
