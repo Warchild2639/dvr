@@ -162,27 +162,15 @@
         let bd = {}; 
         let baseCompletaNube = {};
 
-        function cargarDatosDesdeNube() {
-            return new Promise((resolve) => {
-                const nombreCallback = "jsonp_callback_" + Date.now();
-                window[nombreCallback] = function(datos) {
-                    baseCompletaNube = datos;
-                    delete window[nombreCallback];
-                    document.body.removeChild(script);
-                    resolve();
-                };
-                const script = document.createElement("script");
-                script.src = WEB_APP_URL + "?callback=" + nombreCallback + "&_nocache=" + Date.now();
-                script.onerror = function() {
-                    console.error("Error cargando datos por fallas de red externa.");
-                    delete window[nombreCallback];
-                    try { document.body.removeChild(script); } catch(e){}
-                    resolve();
-                };
-                document.body.appendChild(script);
-            });
+        async function cargarDatosDesdeNube() {
+            try {
+                const res = await fetch(`${WEB_APP_URL}?_nocache=${Date.now()}`);
+                if (res.ok) { baseCompletaNube = await res.json(); }
+            } catch(e) { console.error("Error leyendo de la nube", e); }
         }
         async function seleccionarLinea(nombreLinea) {
+            document.getElementById('select-interno').value = "";
+            document.getElementById('select-visor').value = "";
             lineaActiva = nombreLinea;
             document.getElementById('linea-activa-txt').textContent = "Cargando Línea " + lineaActiva + "...";
             document.getElementById('pantalla-menu').classList.add('hidden');
@@ -246,7 +234,6 @@
             const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
             
             const paquete = { 
-                action: 'saveText',
                 linea: lineaActiva, 
                 interno: interno, 
                 estado: estado, 
@@ -260,70 +247,62 @@
                 btn.disabled = false; btn.textContent = "Guardar Chequeo"; return; 
             }
 
-            // FUNCIÓN EMBEDDED: Envía datos pesados mediante JSONP evadiendo bloqueos de CORS
-            const enviarViaJSONP = (parametros) => {
-                return new Promise((resolve) => {
-                    const nombreCallback = "callback_" + Math.floor(Math.random() * 1000000);
-                    window[nombreCallback] = function(respuesta) {
-                        delete window[nombreCallback];
-                        document.body.removeChild(scriptGl);
-                        resolve(respuesta);
-                    };
-                    const queryParams = new URLSearchParams(parametros).toString();
-                    const scriptGl = document.createElement("script");
-                    scriptGl.src = WEB_APP_URL + "?" + queryParams + "&callback=" + nombreCallback + "&_t=" + Date.now();
-                    scriptGl.onerror = function() {
-                        delete window[nombreCallback];
-                        try { document.body.removeChild(scriptGl); } catch(e){}
-                        resolve({ status: "error" });
-                    };
-                    document.body.appendChild(scriptGl);
+            try {
+                // 1. Guardar la información en texto de forma primaria (Liviana y Directa)
+                btn.textContent = "⏳ Registrando en base de datos...";
+                await fetch(WEB_APP_URL, {
+                    method: "POST",
+                    body: JSON.stringify(paquete)
                 });
-            };
 
-            btn.textContent = "⏳ Registrando en base de datos...";
-            await enviarViaJSONP(paquete);
+                // 2. Si el estado es operativo, subir cada foto de forma aislada
+                if (estado === 'SI') {
+                    const archivosMapeo = [
+                        { id: 'input-foto4', key: 'foto4', nombre: '4 Pantallas' },
+                        { id: 'input-fotoMenu', key: 'input-fotoMenu', nombre: 'Menú Interno' }
+                    ];
 
-            if (estado === 'SI') {
-                const archivosMapeo = [
-                    { id: 'input-foto4', key: 'foto4', nombre: '4 Pantallas' },
-                    { id: 'input-fotoMenu', key: 'input-fotoMenu', nombre: 'Menú Interno' }
-                ];
+                    for (const item of archivosMapeo) {
+                        const inputElement = document.getElementById(item.id);
+                        if (inputElement && inputElement.files && inputElement.files.length > 0) {
+                            const archivoIndividual = inputElement.files[0]; // Extracción física indexada correcta
+                            btn.textContent = `⏳ Leyendo: ${item.nombre}...`;
 
-                for (const item of archivosMapeo) {
-                    const inputElement = document.getElementById(item.id);
-                    if (inputElement && inputElement.files && inputElement.files.length > 0) {
-                        const archivoIndividual = inputElement.files[0]; // Extracción física indexada correcta
-                        btn.textContent = `⏳ Leyendo: ${item.nombre}...`;
-
-                        await new Promise((resolve) => {
-                            const lectorAislado = new FileReader();
-                            lectorAislado.onload = async (e) => {
-                                btn.textContent = `⏳ Transmitiendo: ${item.nombre}...`;
-                                await enviarViaJSONP({
-                                    action: 'uploadPhoto',
-                                    linea: lineaActiva,
-                                    interno: interno,
-                                    tipoFoto: item.key,
-                                    fileData: encodeURIComponent(e.target.result) // Formateado limpio para URLs sin roturas
-                                });
-                                resolve(true);
-                            };
-                            lectorAislado.onerror = () => { resolve(true); };
-                            lectorAislado.readAsDataURL(archivoIndividual);
-                        });
+                            await new Promise((resolve) => {
+                                const lectorAislado = new FileReader();
+                                lectorAislado.onload = async (e) => {
+                                    try {
+                                        btn.textContent = `⏳ Transmitiendo: ${item.nombre}...`;
+                                        await fetch(WEB_APP_URL, {
+                                            method: "POST",
+                                            body: JSON.stringify({
+                                                action: 'uploadPhoto',
+                                                linea: lineaActiva,
+                                                interno: interno,
+                                                tipoFoto: item.key,
+                                                fileData: e.target.result
+                                            })
+                                        });
+                                    } catch (errFoto) { console.error(`Error al transmitir ${item.nombre}:`, errFoto); }
+                                    resolve(true);
+                                };
+                                lectorAislado.onerror = () => { resolve(true); };
+                                lectorAislado.readAsDataURL(archivoIndividual);
+                            });
+                        }
                     }
                 }
-            }
 
-            alert('¡Chequeo y registros multimedia guardados exitosamente!');
-            setTimeout(async () => {
-                await seleccionarLinea(lineaActiva);
-                document.getElementById('select-estado').value = ""; document.getElementById('txt-serial').value = ""; document.getElementById('txt-motivo').value = "";
-                ['input-foto4', 'input-fotoMenu'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
-                alternarCampos();
-                btn.disabled = false; btn.textContent = "Guardar Chequeo";
-            }, 1500);
+                alert('¡Chequeo y registros multimedia guardados exitosamente!');
+                setTimeout(async () => {
+                    await seleccionarLinea(lineaActiva);
+                    document.getElementById('select-estado').value = ""; document.getElementById('txt-serial').value = ""; document.getElementById('txt-motivo').value = "";
+                    ['input-foto4', 'input-fotoMenu'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+                    alternarCampos();
+                    btn.disabled = false; btn.textContent = "Guardar Chequeo";
+                }, 1500);
+
+            } catch(err) { alert('Error de red al conectar con Google.'); btn.disabled = false; btn.textContent = "Guardar Chequeo"; }
         }
         function calcularAntiguos() {
             const lista = document.getElementById('lista-antiguos'); if (!lista) return; lista.innerHTML = '';
