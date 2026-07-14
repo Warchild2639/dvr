@@ -14,7 +14,7 @@
         button:hover { background: #0056b3; }
         .btn-export { background: #28a745; }
         .btn-export:hover { background: #218838; }
-        .btn-download { background: #17a2b8; margin-top: 5px; font-size: 12px; padding: 6px; width: 100%; }
+        .btn-download { background: #17a2b8; margin-top: 5px; font-size: 12px; padding: 6px; }
         .btn-download:hover { background: #138496; }
         .hidden { display: none; }
         ul { list-style: none; padding: 0; }
@@ -106,19 +106,14 @@
             <div id="campos-si" class="hidden">
                 <label for="input-fotoFrente">Foto del Frente:</label>
                 <input type="file" id="input-fotoFrente" accept="image/*">
-
                 <label for="input-fotoSerial">Foto del Serial:</label>
                 <input type="file" id="input-fotoSerial" accept="image/*">
-
                 <label for="input-fotoChip">Foto del Chip:</label>
                 <input type="file" id="input-fotoChip" accept="image/*">
-
                 <label for="input-fotoRegistro">Foto del Registro:</label>
                 <input type="file" id="input-fotoRegistro" accept="image/*">
-
                 <label for="input-foto4P">Foto de las 4 Pantallas:</label>
                 <input type="file" id="input-foto4P" accept="image/*">
-
                 <label for="txt-serial">Número Serial:</label>
                 <input type="text" id="txt-serial" placeholder="Escriba el número serial aquí...">
             </div>
@@ -139,31 +134,11 @@
             <div id="visor-contenedor" class="foto-container hidden">
                 <p style="text-align:left; margin:5px 0;"><b>N° Serial:</b> <span id="visor-serial-txt">-</span></p>
                 <div class="grid-5-fotos">
-                    <div class="bloque-foto-visor">
-                        <span class="txt-titulo-foto">Frente</span>
-                        <img id="visor-imgFrente" src="" class="foto-visualizador" alt="Frente">
-                        <button id="btn-down-frente" class="btn-download" onclick="abrirFoto('frente')">Ver</button>
-                    </div>
-                    <div class="bloque-foto-visor">
-                        <span class="txt-titulo-foto">Serial</span>
-                        <img id="visor-imgSerial" src="" class="foto-visualizador" alt="Serial">
-                        <button id="btn-down-serial" class="btn-download" onclick="abrirFoto('serial')">Ver</button>
-                    </div>
-                    <div class="bloque-foto-visor">
-                        <span class="txt-titulo-foto">Chip</span>
-                        <img id="visor-imgChip" src="" class="foto-visualizador" alt="Chip">
-                        <button id="btn-down-chip" class="btn-download" onclick="abrirFoto('chip')">Ver</button>
-                    </div>
-                    <div class="bloque-foto-visor">
-                        <span class="txt-titulo-foto">Registro</span>
-                        <img id="visor-imgRegistro" src="" class="foto-visualizador" alt="Registro">
-                        <button id="btn-down-registro" class="btn-download" onclick="abrirFoto('registro')">Ver</button>
-                    </div>
-                    <div class="bloque-foto-visor">
-                        <span class="txt-titulo-foto">4 Pantallas</span>
-                        <img id="visor-img4P" src="" class="foto-visualizador" alt="4 Pantallas">
-                        <button id="btn-down-4p" class="btn-download" onclick="abrirFoto('4p')">Ver</button>
-                    </div>
+                    <div class="bloque-foto-visor"><span class="txt-titulo-foto">Frente</span><img id="visor-imgFrente" src="" class="foto-visualizador"><button id="btn-down-frente" class="btn-download" onclick="abrirFoto('frente')">Ver</button></div>
+                    <div class="bloque-foto-visor"><span class="txt-titulo-foto">Serial</span><img id="visor-imgSerial" src="" class="foto-visualizador"><button id="btn-down-serial" class="btn-download" onclick="abrirFoto('serial')">Ver</button></div>
+                    <div class="bloque-foto-visor"><span class="txt-titulo-foto">Chip</span><img id="visor-imgChip" src="" class="foto-visualizador"><button id="btn-down-chip" class="btn-download" onclick="abrirFoto('chip')">Ver</button></div>
+                    <div class="bloque-foto-visor"><span class="txt-titulo-foto">Registro</span><img id="visor-imgRegistro" src="" class="foto-visualizador"><button id="btn-down-registro" class="btn-download" onclick="abrirFoto('registro')">Ver</button></div>
+                    <div class="bloque-foto-visor"><span class="txt-titulo-foto">4P</span><img id="visor-img4P" src="" class="foto-visualizador"><button id="btn-down-4p" class="btn-download" onclick="abrirFoto('4p')">Ver</button></div>
                 </div>
             </div>
             <p id="visor-vacio" style="font-size: 13px; color: #666; text-align: center; margin-top: 5px;">Este interno no posee registros multimedia.</p>
@@ -178,44 +153,27 @@
     </div>
 
     <div id="reporte-impresion">
-        <h2 id="print-titulo" style="text-align: center; color: #000; margin-bottom: 5px;">Reporte General de Control de Flota</h2>
-        <p id="fecha-reporte" style="text-align: center; font-size: 12px; color: #555; margin-bottom: 25px;"></p>
-        
+        <h2 id="print-titulo">Reporte General de Control de Flota</h2>
+        <p id="fecha-reporte"></p>
         <div class="print-section">
-            <h3 style="color: green; border-bottom: 2px solid green; padding-bottom: 3px;">Dispositivos que SÍ Funcionan</h3>
+            <h3>Dispositivos que SÍ Funcionan</h3>
             <table>
-                <thead>
-                    <tr>
-                        <th style="width: 10%;">Interno</th>
-                        <th style="width: 15%;">Último Control</th>
-                        <th style="width: 15%;">N° Serial</th>
-                        <th style="width: 60%;">Evidencias Fotográficas (Frente / Serial / Chip / Registro / 4P)</th>
-                    </tr>
-                </thead>
+                <thead><tr><th style="width: 10%;">Interno</th><th style="width: 15%;">Último Control</th><th style="width: 15%;">N° Serial</th><th style="width: 60%;">Evidencias (Frente / Serial / Chip / Reg / 4P)</th></tr></thead>
                 <tbody id="tabla-si-cuerpo"></tbody>
             </table>
         </div>
-        
         <div class="print-section">
-            <h3 style="color: red; border-bottom: 2px solid red; padding-bottom: 3px;">Dispositivos que NO Funcionan</h3>
+            <h3>Dispositivos que NO Funcionan</h3>
             <table>
-                <thead>
-                    <tr>
-                        <th style="width: 15%;">Interno</th>
-                        <th style="width: 25%;">Último Control</th>
-                        <th style="width: 60%;">Motivo de la Falla</th>
-                    </tr>
-                </thead>
+                <thead><tr><th style="width: 15%;">Interno</th><th style="width: 25%;">Último Control</th><th style="width: 60%;">Motivo de la Falla</th></tr></thead>
                 <tbody id="tabla-no-cuerpo"></tbody>
             </table>
         </div>
     </div>
     <script>
-        const WEB_APP_URL = "https://google.com"; // REEMPLAZAR CON TU LINK DE WEB APP REAL
+        const WEB_APP_URL = "https://google.com"; 
 
-        let lineaActiva = "";
-        let bd = {}; 
-        let baseCompletaNube = {};
+        let lineaActiva = ""; let bd = {}; let baseCompletaNube = {};
 
         function formatearLinkMiniatura(urlDrive) {
             if (!urlDrive || (urlDrive.indexOf("id=") === -1 && urlDrive.indexOf("/d/") === -1)) return urlDrive;
@@ -237,35 +195,26 @@
             document.getElementById('linea-activa-txt').textContent = "Descargando datos en tiempo real de Línea " + lineaActiva + "...";
             document.getElementById('pantalla-menu').classList.add('hidden');
             document.getElementById('pantalla-gestion').classList.remove('hidden');
-
             await cargarDatosDesdeNube();
             bd = baseCompletaNube[lineaActiva] || {};
-
             try {
                 const respuesta = await fetch(`parque/${lineaActiva}.txt?_=${new Date().getTime()}`);
                 if (respuesta.ok) {
                     const texto = await respuesta.text();
                     const internosArchivo = texto.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
                     internosArchivo.forEach(interno => {
-                        if (!bd[interno]) {
-                            bd[interno] = { estado: 'Sin chequear', fecha: '', motivo: '', fFrente:'', fSerial:'', fChip:'', fRegistro:'', f4P:'', serial:'' };
-                        }
+                        if (!bd[interno]) { bd[interno] = { estado: 'Sin chequear', fecha: '', motivo: '', fFrente:'', fSerial:'', fChip:'', fRegistro:'', f4P:'', serial:'' }; }
                     });
                 }
             } catch (error) { console.error("Error al sincronizar el parque:", error); }
-
             document.getElementById('linea-activa-txt').textContent = "Línea activa: " + lineaActiva;
-            actualizarSelects();
-            calcularAntiguos();
-            actualizarIndicadoresRapidos();
+            actualizarSelects(); calcularAntiguos(); actualizarIndicadoresRapidos();
         }
 
         function actualizarIndicadoresRapidos() {
             let si = 0, no = 0, sin = 0;
             Object.keys(bd).forEach(interno => {
-                if (bd[interno].estado === "SI") si++;
-                else if (bd[interno].estado === "NO") no++;
-                else sin++;
+                if (bd[interno].estado === "SI") si++; else if (bd[interno].estado === "NO") no++; else sin++;
             });
             document.getElementById('ind-cant-si').textContent = si;
             document.getElementById('ind-cant-no').textContent = no;
@@ -279,8 +228,7 @@
         }
 
         function actualizarSelects() {
-            const selectForm = document.getElementById('select-interno');
-            const selectVisor = document.getElementById('select-visor');
+            const selectForm = document.getElementById('select-interno'); const selectVisor = document.getElementById('select-visor');
             const valorFormAntes = selectForm.value; const valorVisorAntes = selectVisor.value;
             selectForm.innerHTML = '<option value="">-- Seleccione un interno --</option>';
             selectVisor.innerHTML = '<option value="">-- Seleccione un interno --</option>';
@@ -300,123 +248,59 @@
             const interno = document.getElementById('select-interno').value;
             const estado = document.getElementById('select-estado').value;
             if (!interno || !estado) return alert('Por favor, seleccione interno y estado.');
-            
-            const btn = document.getElementById('btn-guardar'); 
-            btn.disabled = true; 
-            btn.textContent = "⏳ Guardando datos básicos...";
-            
-            const ahora = new Date(); 
-            const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
+            const btn = document.getElementById('btn-guardar'); btn.disabled = true; btn.textContent = "⏳ Guardando datos básicos...";
+            const ahora = new Date(); const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
             
             const paquete = { 
-                linea: lineaActiva, 
-                interno: interno, 
-                estado: estado, 
-                fecha: fechaString, 
+                linea: lineaActiva, interno: interno, estado: estado, fecha: fechaString, 
                 serial: estado === 'SI' ? document.getElementById('txt-serial').value.trim() : '', 
                 motivo: estado === 'NO' ? document.getElementById('txt-motivo').value.trim() : '',
                 fFrente:'', fSerial:'', fChip:'', fRegistro:'', f4P:'' 
             };
-
-            if (estado === 'NO' && !paquete.motivo) {
-                alert('Ingrese el motivo de la falla.');
-                btn.disabled = false;
-                btn.textContent = "Guardar Chequeo";
-                return;
-            }
+            if (estado === 'NO' && !paquete.motivo) { alert('Ingrese el motivo.'); btn.disabled = false; btn.textContent = "Guardar Chequeo"; return; }
 
             try {
-                // 1. Guardar primero el texto plano (Rápido y liviano)
-                await fetch(WEB_APP_URL, { 
-                    method: "POST", 
-                    mode: "no-cors", 
-                    headers: { "Content-Type": "text/plain" }, 
-                    body: JSON.stringify(paquete) 
-                });
-
-                // 2. Si funciona, procesamos las imágenes de manera fragmentada e individual
+                await fetch(WEB_APP_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(paquete) });
                 if (estado === 'SI') {
                     const inputsFotos = [
-                        { key: 'fFrente', id: 'input-fotoFrente', nombre: 'Frente' },
-                        { key: 'fSerial', id: 'input-fotoSerial', nombre: 'Serial' },
-                        { key: 'fChip', id: 'input-fotoChip', nombre: 'Chip' },
-                        { key: 'fRegistro', id: 'input-fotoRegistro', nombre: 'Registro' },
-                        { key: 'f4P', id: 'input-foto4P', nombre: '4 Pantallas' }
+                        { key: 'fFrente', id: 'input-fotoFrente' }, { key: 'fSerial', id: 'input-fotoSerial' },
+                        { key: 'fChip', id: 'input-fotoChip' }, { key: 'fRegistro', id: 'input-fotoRegistro' }, { key: 'f4P', id: 'input-foto4P' }
                     ];
-
-                    const fotosParaSubir = inputsFotos.filter(item => {
-                        const input = document.getElementById(item.id);
-                        return input && input.files.length > 0;
-                    });
-
+                    const fotosParaSubir = inputsFotos.filter(item => { const inp = document.getElementById(item.id); return inp && inp.files.length > 0; });
                     if (fotosParaSubir.length > 0) {
-                        let completadas = 0;
-                        btn.textContent = `⏳ Subiendo fotos (0 de ${fotosParaSubir.length})...`;
-
+                        let completadas = 0; btn.textContent = `⏳ Subiendo fotos (0 de ${fotosParaSubir.length})...`;
                         const promesasSubida = fotosParaSubir.map(item => {
                             return new Promise((resolve) => {
-                                const fileInput = document.getElementById(item.id).files[0];
+                                const fileEl = document.getElementById(item.id);
+                                if (!fileEl || !fileEl.files || fileEl.files.length === 0) return resolve(true);
                                 const lector = new FileReader();
-
                                 lector.onload = async (e) => {
                                     try {
-                                        const paqueteFoto = {
-                                            action: 'uploadPhoto',
-                                            linea: lineaActiva,
-                                            interno: interno,
-                                            tipoFoto: item.key,
-                                            fileData: e.target.result
-                                        };
-
                                         await fetch(WEB_APP_URL, {
-                                            method: "POST",
-                                            mode: "no-cors",
-                                            headers: { "Content-Type": "text/plain" },
-                                            body: JSON.stringify(paqueteFoto)
+                                            method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain" },
+                                            body: JSON.stringify({ action: 'uploadPhoto', linea: lineaActiva, interno: interno, tipoFoto: item.key, fileData: e.target.result })
                                         });
-
-                                        completadas++;
-                                        btn.textContent = `⏳ Subiendo fotos (${completadas} de ${fotosParaSubir.length})...`;
+                                        completadas++; btn.textContent = `⏳ Subiendo fotos (${completadas} de ${fotosParaSubir.length})...`;
                                         resolve(true);
-                                    } catch (errSubida) {
-                                        console.error(`Error en foto ${item.nombre}:`, errSubida);
-                                        resolve(false);
-                                    }
+                                    } catch (err) { resolve(false); }
                                 };
-                                lector.readAsDataURL(fileInput);
+                                lector.readAsDataURL(fileEl.files[0]);
                             });
                         });
-
                         await Promise.all(promesasSubida);
                     }
                 }
-
-                alert('¡Chequeo guardado exitosamente en la nube!');
-                
-                setTimeout(async () => { 
-                    await seleccionarLinea(lineaActiva); 
-                    limpiarCamposFormulario();
-                    btn.disabled = false; 
-                    btn.textContent = "Guardar Chequeo"; 
-                }, 1500);
-
-            } catch(err) {
-                alert('Error de red al conectar con la nube.');
-                btn.disabled = false; 
-                btn.textContent = "Guardar Chequeo";
-            }
+                alert('¡Chequeo guardado exitosamente!');
+                setTimeout(async () => { await seleccionarLinea(lineaActiva); limpiarCamposFormulario(); btn.disabled = false; btn.textContent = "Guardar Chequeo"; }, 1500);
+            } catch(err) { alert('Error de red.'); btn.disabled = false; btn.textContent = "Guardar Chequeo"; }
         }
 
         function limpiarCamposFormulario() {
-            document.getElementById('select-estado').value = "";
-            document.getElementById('txt-serial').value = "";
-            document.getElementById('txt-motivo').value = "";
-            ['input-fotoFrente', 'input-fotoSerial', 'input-fotoChip', 'input-fotoRegistro', 'input-foto4P'].forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.value = "";
-            });
+            document.getElementById('select-estado').value = ""; document.getElementById('txt-serial').value = ""; document.getElementById('txt-motivo').value = "";
+            ['input-fotoFrente', 'input-fotoSerial', 'input-fotoChip', 'input-fotoRegistro', 'input-foto4P'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
             alternarCampos();
         }
+
         function calcularAntiguos() {
             const lista = document.getElementById('lista-antiguos'); if (!lista) return; lista.innerHTML = '';
             const arreglados = Object.keys(bd).map(interno => ({ interno: interno, ...bd[interno], timestamp: bd[interno].fecha ? parseFecha(bd[interno].fecha) : 0 }));
@@ -433,21 +317,16 @@
             const interno = document.getElementById('select-visor').value; const contenedor = document.getElementById('visor-contenedor'); const txtVacio = document.getElementById('visor-vacio');
             if (interno && bd[interno] && bd[interno].estado === 'SI') {
                 document.getElementById('visor-serial-txt').textContent = bd[interno].serial || 'Sin número serial';
-                
                 const fotosMapeo = [
-                    { id: 'visor-imgFrente', btn: 'btn-down-frente', src: bd[interno].fFrente },
-                    { id: 'visor-imgSerial', btn: 'btn-down-serial', src: bd[interno].fSerial },
-                    { id: 'visor-imgChip', btn: 'btn-down-chip', src: bd[interno].fChip },
-                    { id: 'visor-imgRegistro', btn: 'btn-down-registro', src: bd[interno].fRegistro },
+                    { id: 'visor-imgFrente', btn: 'btn-down-frente', src: bd[interno].fFrente }, { id: 'visor-imgSerial', btn: 'btn-down-serial', src: bd[interno].fSerial },
+                    { id: 'visor-imgChip', btn: 'btn-down-chip', src: bd[interno].fChip }, { id: 'visor-imgRegistro', btn: 'btn-down-registro', src: bd[interno].fRegistro },
                     { id: 'visor-img4P', btn: 'btn-down-4p', src: bd[interno].f4P }
                 ];
-                
                 fotosMapeo.forEach(item => {
                     const el = document.getElementById(item.id);
                     if (item.src) { el.src = formatearLinkMiniatura(item.src); document.getElementById(item.btn).style.display = 'inline-block'; } 
                     else { el.src = ''; document.getElementById(item.btn).style.display = 'none'; }
                 });
-                
                 contenedor.classList.remove('hidden'); txtVacio.classList.add('hidden');
             } else { contenedor.classList.add('hidden'); txtVacio.classList.remove('hidden'); }
         }
@@ -468,23 +347,9 @@
                 const item = bd[interno]; if (item.estado === 'Sin chequear') return; const tr = document.createElement('tr');
                 if (item.estado === 'SI') {
                     hayOperativos = true;
-                    const armarMiniaturaPDF = (src, lbl) => {
-                        return src ? `<div class="print-thumb-container"><img src="${formatearLinkMiniatura(src)}" class="print-thumb"><span class="print-lbl-foto">${lbl}</span></div>` : '<div>-</div>';
-                    };
-                    tr.innerHTML = `
-                        <td><b>Int ${interno}</b></td>
-                        <td>${item.fecha}</td>
-                        <td>${item.serial || '-'}</td>
-                        <td>
-                            <div class="print-flex-thumbs">
-                                ${armarMiniaturaPDF(item.fFrente, 'Frente')}
-                                ${armarMiniaturaPDF(item.fSerial, 'Serial')}
-                                ${armarMiniaturaPDF(item.fChip, 'Chip')}
-                                ${armarMiniaturaPDF(item.fRegistro, 'Registro')}
-                                ${armarMiniaturaPDF(item.f4P, '4 Pantallas')}
-                            </div>
-                        </td>
-                    `;
+                    const armarMiniaturaPDF = (src, lbl) => { return src ? `<div class="print-thumb-container"><img src="${formatearLinkMiniatura(src)}" class="print-thumb"><span class="print-lbl-foto">${lbl}</span></div>` : '<div>-</div>'; };
+                    tr.innerHTML = `<td><b>Int ${interno}</b></td><td>${item.fecha}</td><td>${item.serial || '-'}</td>
+                        <td><div class="print-flex-thumbs">${armarMiniaturaPDF(item.fFrente, 'Frente')}${armarMiniaturaPDF(item.fSerial, 'Serial')}${armarMiniaturaPDF(item.fChip, 'Chip')}${armarMiniaturaPDF(item.fRegistro, 'Registro')}${armarMiniaturaPDF(item.f4P, '4P')}</div></td>`;
                     cuerpoSi.appendChild(tr);
                 } else if (item.estado === 'NO') {
                     hayFallas = true;
