@@ -276,30 +276,33 @@
         }
 
         // MOTOR INTEGRADO POST RESISTENTE PARA MULTIMEDIA SIN LIMITE DE CARGA
-        async function guardarChequeo() {
-            const interno = document.getElementById('select-interno').value;
-            const estado = document.getElementById('select-estado').value;
-            if (!interno || !estado) return alert('Por favor, seleccione interno y estado.');
-            const btn = document.getElementById('btn-guardar'); btn.disabled = true; btn.textContent = "⏳ Guardando datos básicos...";
-            const ahora = new Date(); const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
-            
-            const paqueteText = { 
-                action: 'saveText', linea: lineaActiva, interno: interno, estado: estado, fecha: fechaString, 
-                serial: estado === 'SI' ? document.getElementById('txt-serial').value.trim() : '', 
-                motivo: estado === 'NO' ? document.getElementById('txt-motivo').value.trim() : ''
-            };
-            if (estado === 'NO' && !paqueteText.motivo) { alert('Ingrese el motivo.'); btn.disabled = false; btn.textContent = "Guardar Chequeo"; return; }
+        // MOTOR INTEGRADO POST RESISTENTE PARA MULTIMEDIA SIN LIMITE DE CARGA (ESPERA OBLIGATORIA)
+async function guardarChequeo() {
+    const interno = document.getElementById('select-interno').value;
+    const estado = document.getElementById('select-estado').value;
+    if (!interno || !estado) return alert('Por favor, seleccione interno y estado.');
+    const btn = document.getElementById('btn-guardar'); btn.disabled = true; btn.textContent = "⏳ Guardando datos básicos...";
+    const ahora = new Date(); const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
+    
+    const paqueteText = { 
+        action: 'saveText', linea: lineaActiva, interno: interno, estado: estado, fecha: fechaString, 
+        serial: estado === 'SI' ? document.getElementById('txt-serial').value.trim() : '', 
+        motivo: estado === 'NO' ? document.getElementById('txt-motivo').value.trim() : ''
+    };
+    if (estado === 'NO' && !paqueteText.motivo) { alert('Ingrese el motivo.'); btn.disabled = false; btn.textContent = "Guardar Chequeo"; return; }
 
-                const enviarViaPOST = async (objetoCarga) => {
+    // FUNCIÓN DE RED CORREGIDA: SÍ O SÍ RETORNA LA RESPUESTA DEL SERVIDOR
+    const enviarViaPOST = async (objetoCarga) => {
         try {
             const respuesta = await fetch(WEB_APP_URL, {
                 method: "POST",
-                mode: "cors", // Cambiado de no-cors a cors para validar respuestas
-                headers: { "Content-Type": "text/plain" }, // Crucial: Evita la traba "preflight" de seguridad
+                mode: "cors",
+                headers: { "Content-Type": "text/plain" },
                 body: JSON.stringify(objetoCarga)
             });
             if (respuesta.ok) {
-                return { status: "success" };
+                const resJson = await respuesta.json();
+                return resJson;
             }
             return { status: "error" };
         } catch (e) {
@@ -307,6 +310,60 @@
             return { status: "error" };
         }
     };
+
+    try {
+        btn.textContent = "⏳ Registrando en base de datos...";
+        await enviarViaPOST(paqueteText);
+
+        if (estado === 'SI') {
+            const archivosMapeo = [
+                { id: 'input-fotoFrente', key: 'fotoFrente', nombre: 'Frente' },
+                { id: 'input-fotoSerial', key: 'fotoSerial', nombre: 'Serial' },
+                { id: 'input-fotoChip', key: 'fotoChip', nombre: 'Chip' },
+                { id: 'input-fotoRegistro', key: 'fotoRegistro', nombre: 'Registro' },
+                { id: 'input-fotoCamaras', key: 'fotoCamaras', nombre: '4 Cámaras' }
+            ];
+
+            for (const item of archivosMapeo) {
+                const inputElement = document.getElementById(item.id);
+                if (inputElement && inputElement.files && inputElement.files.length > 0) {
+                    const archivoIndividual = inputElement.files[0]; // Extracción física indexada corregida
+                    btn.textContent = `⏳ Leyendo: ${item.nombre}...`;
+
+                    // Esperamos obligatoriamente a que termine de leer y subir antes de avanzar en el bucle 'for'
+                    await new Promise((resolve) => {
+                        const lectorAislado = new FileReader();
+                        lectorAislado.onload = async (e) => {
+                            btn.textContent = `⏳ Transmitiendo: ${item.nombre}...`;
+                            
+                            // EJECUCIÓN CON AWAIT: Frena el código hasta que Google responda "OK"
+                            await enviarViaPOST({
+                                action: 'uploadPhoto', 
+                                linea: lineaActiva, 
+                                interno: interno, 
+                                tipoFoto: item.key,
+                                mimeType: archivoIndividual.type || "image/jpeg",
+                                fileData: e.target.result
+                            });
+                            resolve(true);
+                        };
+                        lectorAislado.onerror = () => { resolve(true); };
+                        lectorAislado.readAsDataURL(archivoIndividual);
+                    });
+                }
+            }
+        }
+        
+        alert('¡Chequeo guardado exitosamente!');
+        setTimeout(async () => {
+            await seleccionarLinea(lineaActiva);
+            document.getElementById('select-estado').value = ""; document.getElementById('txt-serial').value = ""; document.getElementById('txt-motivo').value = "";
+            ['input-fotoFrente', 'input-fotoSerial', 'input-fotoChip', 'input-fotoRegistro', 'input-fotoCamaras'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+            alternarCampos(); btn.disabled = false; btn.textContent = "Guardar Chequeo";
+        }, 1500);
+    } catch(err) { alert('Error de red al guardar.'); btn.disabled = false; btn.textContent = "Guardar Chequeo"; }
+}
+
 
             try {
                 btn.textContent = "⏳ Registrando en base de datos...";
