@@ -71,7 +71,6 @@
         <button class="linea-btn morado" onclick="seleccionarLinea('514')">Línea 514</button>
         <button class="linea-btn verde-oscuro" onclick="seleccionarLinea('Varela')">Línea Varela</button>
     </div>
-
     <div id="pantalla-gestion" class="hidden">
         <button class="btn-volver" onclick="volverAlMenu()">← Cambiar de Línea</button>
         <div><span id="linea-activa-txt" class="lbl-linea-activa">Línea: Ninguna</span></div>
@@ -162,7 +161,6 @@
             <button class="btn-export" onclick="exportarPDF()">Exportar Reporte Completo a PDF</button>
         </div>
     </div>
-
     <!-- DOCUMENTO MAQUETADO DE IMPRESIÓN (PDF OCULTO PARA 5 MINIATURAS) -->
     <div id="reporte-impresion">
         <h2 id="print-titulo">Reporte General de Control de Flota</h2>
@@ -195,20 +193,24 @@
             </table>
         </div>
     </div>
+
     <script>
         // PEGÁ ACÁ TU URL REAL DE GOOGLE APPS SCRIPT QUE TERMINA EN /exec
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyCFOGNDwgHTdxQFA9D6s1CLgtdg70jG-GkjMXBrYoYLbJscDFQ96d8mvik2k8tpxWE/exec"; 
+        const WEB_APP_URL = "https://google.com"; 
 
         let lineaActiva = ""; let bd = {}; let baseCompletaNube = {};
 
+        // FORMATEADOR CON INTERPOLACION FIXEADA HACIA LH3 GOOGLE
         function formatearLinkMiniatura(urlDrive) {
             if (!urlDrive || (urlDrive.indexOf("id=") === -1 && urlDrive.indexOf("/d/") === -1)) return urlDrive;
             let id = "";
-            if (urlDrive.indexOf("id=") !== -1) { id = urlDrive.split("id=")[1].split("&")[0]; } 
-            else { id = urlDrive.split("/d/")[1].split("/")[0]; }
-            return `https://google.com{id}`;
+            if (urlDrive.indexOf("id=") !== -1) { 
+                id = urlDrive.split("id=")[1].split("&")[0]; 
+            } else { 
+                id = urlDrive.split("/d/")[1].split("/")[0]; 
+            }
+            return `https://googleusercontent.com{id}=w200-h200-p`;
         }
-
         // MOTOR DINÁMICO DE DESCARGA: EVITA CONGELACIONES EN EL INICIO DE PÁGINA
         function cargarDatosDesdeNube() {
             return new Promise((resolve) => {
@@ -257,6 +259,7 @@
             document.getElementById('linea-activa-txt').textContent = "Línea activa: " + lineaActiva;
             actualizarSelects(); calcularAntiguos();
         }
+
         function volverAlMenu() {
             lineaActiva = ""; bd = {};
             document.getElementById('pantalla-gestion').classList.add('hidden');
@@ -280,8 +283,7 @@
             document.getElementById('campos-si').classList.toggle('hidden', estado !== 'SI');
             document.getElementById('campos-no').classList.toggle('hidden', estado !== 'NO');
         }
-
-        // MOTOR INTEGRADO: ENVÍA EL TEXTO LIVIANO Y LUEGO SUBE LAS 5 IMÁGENES SECUENCIALMENTE
+        // MOTOR INTEGRADO POST RESISTENTE PARA MULTIMEDIA SIN LIMITE DE CARGA
         async function guardarChequeo() {
             const interno = document.getElementById('select-interno').value;
             const estado = document.getElementById('select-estado').value;
@@ -289,32 +291,33 @@
             const btn = document.getElementById('btn-guardar'); btn.disabled = true; btn.textContent = "⏳ Guardando datos básicos...";
             const ahora = new Date(); const fechaString = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString();
             
-            const paquete = { 
+            const paqueteText = { 
                 action: 'saveText', linea: lineaActiva, interno: interno, estado: estado, fecha: fechaString, 
                 serial: estado === 'SI' ? document.getElementById('txt-serial').value.trim() : '', 
                 motivo: estado === 'NO' ? document.getElementById('txt-motivo').value.trim() : ''
             };
-            if (estado === 'NO' && !paquete.motivo) { alert('Ingrese el motivo.'); btn.disabled = false; btn.textContent = "Guardar Chequeo"; return; }
+            if (estado === 'NO' && !paqueteText.motivo) { alert('Ingrese el motivo.'); btn.disabled = false; btn.textContent = "Guardar Chequeo"; return; }
 
-            // FUNCIÓN EMBEDDED: Envía datos inyectando <script> dinámicos evadiendo el "Error de red"
-            const enviarViaJSONP = (parametros) => {
-                return new Promise((resolve) => {
-                    const nombreCallback = "callback_" + Math.floor(Math.random() * 1000000);
-                    window[nombreCallback] = function(respuesta) { delete window[nombreCallback]; document.body.removeChild(scriptGl); resolve(respuesta); };
-                    const queryParams = new URLSearchParams(parametros).toString();
-                    const scriptGl = document.createElement("script");
-                    scriptGl.src = WEB_APP_URL + "?" + queryParams + "&callback=" + nombreCallback + "&_t=" + Date.now();
-                    scriptGl.onerror = function() { delete window[nombreCallback]; try { document.body.removeChild(scriptGl); } catch(e){} resolve({ status: "error" }); };
-                    document.body.appendChild(scriptGl);
-                });
+            const enviarViaPOST = async (objetoCarga) => {
+                try {
+                    await fetch(WEB_APP_URL, {
+                        method: "POST",
+                        mode: "no-cors",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(objetoCarga)
+                    });
+                    return { status: "success" };
+                } catch (e) {
+                    console.error("Fallo de red en transmisión:", e);
+                    return { status: "error" };
+                }
             };
 
             try {
                 btn.textContent = "⏳ Registrando en base de datos...";
-                await enviarViaJSONP(paquete);
+                await enviarViaPOST(paqueteText);
 
                 if (estado === 'SI') {
-                    // ESTRUCTURA CORREGIDA A LAS 5 COLUMNAS DE IMÁGENES REQUERIDAS
                     const archivosMapeo = [
                         { id: 'input-fotoFrente', key: 'fotoFrente', nombre: 'Frente' },
                         { id: 'input-fotoSerial', key: 'fotoSerial', nombre: 'Serial' },
@@ -326,16 +329,21 @@
                     for (const item of archivosMapeo) {
                         const inputElement = document.getElementById(item.id);
                         if (inputElement && inputElement.files && inputElement.files.length > 0) {
-                            const archivoIndividual = inputElement.files[0]; // Extracción indexada física estricta
+                            const archivoIndividual = inputElement.files[0];
                             btn.textContent = `⏳ Leyendo: ${item.nombre}...`;
 
                             await new Promise((resolve) => {
                                 const lectorAislado = new FileReader();
                                 lectorAislado.onload = async (e) => {
                                     btn.textContent = `⏳ Transmitiendo: ${item.nombre}...`;
-                                    await enviarViaJSONP({
-                                        action: 'uploadPhoto', linea: lineaActiva, interno: interno, tipoFoto: item.key,
-                                        fileData: encodeURIComponent(e.target.result)
+                                    
+                                    await enviarViaPOST({
+                                        action: 'uploadPhoto', 
+                                        linea: lineaActiva, 
+                                        interno: interno, 
+                                        tipoFoto: item.key,
+                                        mimeType: archivoIndividual.type || "image/jpeg",
+                                        fileData: e.target.result
                                     });
                                     resolve(true);
                                 };
@@ -352,27 +360,7 @@
                     ['input-fotoFrente', 'input-fotoSerial', 'input-fotoChip', 'input-fotoRegistro', 'input-fotoCamaras'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
                     alternarCampos(); btn.disabled = false; btn.textContent = "Guardar Chequeo";
                 }, 1500);
-            } catch(err) { alert('Error de red.'); btn.disabled = false; btn.textContent = "Guardar Chequeo"; }
-        }
-        function calcularAntiguos() {
-            const lista = document.getElementById('lista-antiguos'); if (!lista) return; lista.innerHTML = '';
-            const arreglados = Object.keys(bd).map(interno => ({ interno: interno, ...bd[interno], timestamp: bd[interno].fecha ? parseFecha(bd[interno].fecha) : 0 }));
-            arreglados.sort((a, b) => a.timestamp - b.timestamp);
-            arreglados.slice(0, 5).forEach(item => {
-                const li = document.createElement('li'); const infoText = item.fecha ? `Último: ${item.fecha} (${item.estado})` : 'Nunca chequeado';
-                li.innerHTML = `<strong>Interno ${item.interno}</strong> <span>${infoText}</span>`; lista.appendChild(li);
-            });
-        }
-
-        function parseFecha(str) { 
-            try { 
-                if (!str) return 0;
-                if (str.includes('/')) {
-                    const [f, h] = str.split(' '); const [d, m, a] = f.split('/'); 
-                    return new Date(`${a}-${m}-${d}T${h}`).getTime(); 
-                }
-                const parsed = Date.parse(str); return isNaN(parsed) ? 0 : parsed;
-            } catch(e) { return 0; } 
+            } catch(err) { alert('Error de red al guardar.'); btn.disabled = false; btn.textContent = "Guardar Chequeo"; }
         }
 
         function abrirFoto(tipo) {
@@ -409,6 +397,26 @@
                 
                 contenedor.classList.remove('hidden'); txtVacio.classList.add('hidden');
             } else { contenedor.classList.add('hidden'); txtVacio.classList.remove('hidden'); }
+        }
+        function calcularAntiguos() {
+            const lista = document.getElementById('lista-antiguos'); if (!lista) return; lista.innerHTML = '';
+            const arreglados = Object.keys(bd).map(interno => ({ interno: interno, ...bd[interno], timestamp: bd[interno].fecha ? parseFecha(bd[interno].fecha) : 0 }));
+            arreglados.sort((a, b) => a.timestamp - b.timestamp);
+            arreglados.slice(0, 5).forEach(item => {
+                const li = document.createElement('li'); const infoText = item.fecha ? `Último: ${item.fecha} (${item.estado})` : 'Nunca chequeado';
+                li.innerHTML = `<strong>Interno ${item.interno}</strong> <span>${infoText}</span>`; lista.appendChild(li);
+            });
+        }
+
+        function parseFecha(str) { 
+            try { 
+                if (!str) return 0;
+                if (str.includes('/')) {
+                    const [f, h] = str.split(' '); const [d, m, a] = f.split('/'); 
+                    return new Date(`${a}-${m}-${d}T${h}`).getTime(); 
+                }
+                const parsed = Date.parse(str); return isNaN(parsed) ? 0 : parsed;
+            } catch(e) { return 0; } 
         }
 
         function exportarPDF() {
