@@ -207,19 +207,21 @@
             }
             return `https://googleusercontent.com{id}=w200-h200-p`;
         }
-        // NUEVA FUNCIÓN CON FETCH POST INTEGRADO: RESUELVE TOTALMENTE EL ERROR DE TOKENS DEL SECTOR DO-GET
+        // MOTOR DE DESCARGA OPTIMIZADO CON CORS ACTIVO
         async function cargarDatosDesdeNube() {
             try {
                 const respuesta = await fetch(WEB_APP_URL, {
                     method: "POST",
+                    mode: "cors", // Obliga al navegador a validar las cabeceras de Google
+                    headers: { "Content-Type": "text/plain" }, // Evita el envío preflight de opción compleja
                     body: JSON.stringify({ action: "readDB" })
                 });
                 if (respuesta.ok) {
                     const datosJson = await respuesta.json();
-                    bd = datosJson[lineaActiva] || {};
+                    bd = datosJson || {};
                 }
             } catch (err) {
-                console.error("Error al sincronizar datos por POST:", err);
+                console.error("Error crítico al sincronizar datos por POST:", err);
                 bd = {};
             }
         }
