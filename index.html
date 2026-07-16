@@ -290,18 +290,24 @@
             };
             if (estado === 'NO' && !paqueteText.motivo) { alert('Ingrese el motivo.'); btn.disabled = false; btn.textContent = "Guardar Chequeo"; return; }
 
-            const enviarViaPOST = async (objetoCarga) => {
-                try {
-                    await fetch(WEB_APP_URL, {
-                        method: "POST",
-                        body: JSON.stringify(objetoCarga)
-                    });
-                    return { status: "success" };
-                } catch (e) {
-                    console.error("Fallo de red en transmisión:", e);
-                    return { status: "error" };
-                }
-            };
+                const enviarViaPOST = async (objetoCarga) => {
+        try {
+            const respuesta = await fetch(WEB_APP_URL, {
+                method: "POST",
+                mode: "cors", // Cambiado de no-cors a cors para validar respuestas
+                headers: { "Content-Type": "text/plain" }, // Crucial: Evita la traba "preflight" de seguridad
+                body: JSON.stringify(objetoCarga)
+            });
+            if (respuesta.ok) {
+                return { status: "success" };
+            }
+            return { status: "error" };
+        } catch (e) {
+            console.error("Fallo de red en transmisión:", e);
+            return { status: "error" };
+        }
+    };
+
             try {
                 btn.textContent = "⏳ Registrando en base de datos...";
                 await enviarViaPOST(paqueteText);
