@@ -87,7 +87,6 @@
                 <option value="NO">NO funciona</option>
             </select>
             
-            <!-- CONTENEDOR NUEVO CON LAS 5 EXIGENCIAS MULTIMEDIA -->
             <div id="campos-si" class="hidden">
                 <label for="input-fotoFrente">Foto del Frente:</label>
                 <input type="file" id="input-fotoFrente" accept="image/*">
@@ -121,7 +120,6 @@
                 <option value="">-- Seleccione un interno --</option>
             </select>
             
-            <!-- VISOR ACTUALIZADO A LAS 5 EVIDENCIAS -->
             <div id="visor-contenedor" class="foto-container hidden">
                 <p style="text-align:left; margin:5px 0;"><b>N° Serial:</b> <span id="visor-serial-txt">-</span></p>
                 <div class="grid-5-fotos">
@@ -161,7 +159,6 @@
             <button class="btn-export" onclick="exportarPDF()">Exportar Reporte Completo a PDF</button>
         </div>
     </div>
-    <!-- DOCUMENTO MAQUETADO DE IMPRESIÓN (PDF OCULTO PARA 5 MINIATURAS) -->
     <div id="reporte-impresion">
         <h2 id="print-titulo">Reporte General de Control de Flota</h2>
         <p id="fecha-reporte"></p>
@@ -195,13 +192,11 @@
     </div>
 
     <script>
-        // PEGÁ ACÁ TU URL REAL DE GOOGLE APPS SCRIPT QUE TERMINA EN /exec
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyCFOGNDwgHTdxQFA9D6s1CLgtdg70jG-GkjMXBrYoYLbJscDFQ96d8mvik2k8tpxWE/exec
-"; 
+        // REEMPLAZÁ CON TU URL DE WEBA APP REAL QUE TERMINA EN /exec
+        const WEB_APP_URL = "https://google.com"; 
 
-        let lineaActiva = ""; let bd = {}; let baseCompletaNube = {};
+        let lineaActiva = ""; let bd = {};
 
-        // FORMATEADOR CON INTERPOLACION FIXEADA HACIA LH3 GOOGLE
         function formatearLinkMiniatura(urlDrive) {
             if (!urlDrive || (urlDrive.indexOf("id=") === -1 && urlDrive.indexOf("/d/") === -1)) return urlDrive;
             let id = "";
@@ -212,26 +207,21 @@
             }
             return `https://googleusercontent.com{id}=w200-h200-p`;
         }
-        // MOTOR DINÁMICO DE DESCARGA: EVITA CONGELACIONES EN EL INICIO DE PÁGINA
-        function cargarDatosDesdeNube() {
-            return new Promise((resolve) => {
-                const nombreCallback = "jsonp_callback_" + Date.now();
-                window[nombreCallback] = function(datos) {
-                    baseCompletaNube = datos;
-                    delete window[nombreCallback];
-                    document.body.removeChild(script);
-                    resolve();
-                };
-                const script = document.createElement("script");
-                script.src = WEB_APP_URL + "?action=readDB&callback=" + nombreCallback + "&_nocache=" + Date.now();
-                script.onerror = function() {
-                    console.error("Error al sincronizar datos.");
-                    delete window[nombreCallback];
-                    try { document.body.removeChild(script); } catch(e){}
-                    resolve();
-                };
-                document.body.appendChild(script);
-            });
+        // NUEVA FUNCIÓN CON FETCH POST INTEGRADO: RESUELVE TOTALMENTE EL ERROR DE TOKENS DEL SECTOR DO-GET
+        async function cargarDatosDesdeNube() {
+            try {
+                const respuesta = await fetch(WEB_APP_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ action: "readDB" })
+                });
+                if (respuesta.ok) {
+                    const datosJson = await respuesta.json();
+                    bd = datosJson[lineaActiva] || {};
+                }
+            } catch (err) {
+                console.error("Error al sincronizar datos por POST:", err);
+                bd = {};
+            }
         }
 
         async function seleccionarLinea(nombreLinea) {
@@ -243,7 +233,6 @@
             document.getElementById('pantalla-gestion').classList.remove('hidden');
 
             await cargarDatosDesdeNube();
-            bd = baseCompletaNube[lineaActiva] || {};
 
             try {
                 const respuesta = await fetch(`parque/${lineaActiva}.txt`);
@@ -266,7 +255,6 @@
             document.getElementById('pantalla-gestion').classList.add('hidden');
             document.getElementById('pantalla-menu').classList.remove('hidden');
         }
-
         function actualizarSelects() {
             const selectForm = document.getElementById('select-interno'); const selectVisor = document.getElementById('select-visor');
             const valorFormAntes = selectForm.value; const valorVisorAntes = selectVisor.value;
@@ -284,6 +272,7 @@
             document.getElementById('campos-si').classList.toggle('hidden', estado !== 'SI');
             document.getElementById('campos-no').classList.toggle('hidden', estado !== 'NO');
         }
+
         // MOTOR INTEGRADO POST RESISTENTE PARA MULTIMEDIA SIN LIMITE DE CARGA
         async function guardarChequeo() {
             const interno = document.getElementById('select-interno').value;
@@ -303,8 +292,6 @@
                 try {
                     await fetch(WEB_APP_URL, {
                         method: "POST",
-                        mode: "no-cors",
-                        headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(objetoCarga)
                     });
                     return { status: "success" };
@@ -313,7 +300,6 @@
                     return { status: "error" };
                 }
             };
-
             try {
                 btn.textContent = "⏳ Registrando en base de datos...";
                 await enviarViaPOST(paqueteText);
@@ -354,6 +340,7 @@
                         }
                     }
                 }
+                
                 alert('¡Chequeo guardado exitosamente!');
                 setTimeout(async () => {
                     await seleccionarLinea(lineaActiva);
@@ -370,7 +357,6 @@
             for (let i = 0; i < llaves.length; i++) { if (String(llaves[i]).trim() === internoSeleccionado) { registro = bd[llaves[i]]; break; } }
             if (registro) { const url = registro[tipo]; if (url && url.startsWith('http')) window.open(url, '_blank'); }
         }
-
         function visualizarFotosParticular() {
             const selectVisor = document.getElementById('select-visor'); const internoSeleccionado = String(selectVisor.value).trim();
             const contenedor = document.getElementById('visor-contenedor'); const txtVacio = document.getElementById('visor-vacio');
@@ -399,6 +385,7 @@
                 contenedor.classList.remove('hidden'); txtVacio.classList.add('hidden');
             } else { contenedor.classList.add('hidden'); txtVacio.classList.remove('hidden'); }
         }
+
         function calcularAntiguos() {
             const lista = document.getElementById('lista-antiguos'); if (!lista) return; lista.innerHTML = '';
             const arreglados = Object.keys(bd).map(interno => ({ interno: interno, ...bd[interno], timestamp: bd[interno].fecha ? parseFecha(bd[interno].fecha) : 0 }));
