@@ -481,7 +481,7 @@
         }
     }
 
-    async function procesarFormularioInspeccion(e) {
+        async function procesarFormularioInspeccion(e) {
         e.preventDefault();
         
         const loader = document.getElementById("loader");
@@ -497,6 +497,7 @@
         const motivo = document.getElementById("select-motivo").value;
         const fecha = new Date().toLocaleString('es-AR');
 
+        // Paso 1: El texto se sigue guardando por GET/JSONP para evitar problemas de CORS básicos
         const urlTexto = `${WEB_APP_URL}?action=saveText&fecha=${encodeURIComponent(fecha)}&linea=${encodeURIComponent(linea)}&interno=${encodeURIComponent(interno)}&estado=${encodeURIComponent(estado)}&serial=${encodeURIComponent(serial)}&motivo=${encodeURIComponent(motivo)}`;
         
         try {
@@ -511,6 +512,7 @@
                 { idElemento: 'file-camaras', claveApi: 'fotoCamaras', nombreVisual: 'Cámaras' }
             ];
 
+            // Paso 2: Las fotos se envían por POST nativo para que soporten cualquier peso de imagen
             for (const mapa of mapasFotos) {
                 const inputFile = document.getElementById(mapa.idElemento);
                 if (inputFile.files && inputFile.files[0]) {
@@ -518,10 +520,24 @@
                     
                     const base64Completo = await convertirFileABase64(inputFile.files[0]);
                     
-                    const urlFoto = `${WEB_APP_URL}?action=uploadPhoto&linea=${encodeURIComponent(linea)}&interno=${encodeURIComponent(interno)}&tipoFoto=${mapa.claveApi}&fileData=${encodeURIComponent(base64Completo)}`;
+                    // Usamos fetch nativo con modo 'no-cors' para mandar el paquete pesado por POST
+                    await fetch(WEB_APP_URL, {
+                        method: "POST",
+                        mode: "no-cors",
+                        headers: {
+                            "Content-Type": "application/x-www-form-urlencoded"
+                        },
+                        body: new URLSearchParams({
+                            "action": "uploadPhoto",
+                            "linea": linea,
+                            "interno": interno,
+                            "tipoFoto": mapa.claveApi,
+                            "fileData": base64Completo
+                        })
+                    });
                     
-                    const resFoto = await ejecutarPeticionJSONP(urlFoto);
-                    if(resFoto.status !== "success") console.warn(`No se pudo alojar la foto: ${mapa.nombreVisual}`);
+                    // Como el modo 'no-cors' no permite leer la respuesta por seguridad,
+                    // asumimos que se envió correctamente al no disparar un error de red.
                 }
             }
 
@@ -537,6 +553,7 @@
             loader.classList.add("hidden");
         }
     }
+
     function limpiarPrevisualizacionesGraficas() {
         document.querySelectorAll(".preview-img").forEach(img => img.style.display = "none");
         document.getElementById("txt-frente").textContent = "📸 Foto del Frente";
