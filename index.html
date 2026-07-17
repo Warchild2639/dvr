@@ -481,14 +481,14 @@
         }
     }
 
-        async function procesarFormularioInspeccion(e) {
+            async function procesarFormularioInspeccion(e) {
         e.preventDefault();
         
         const loader = document.getElementById("loader");
         const loaderText = document.getElementById("loader-text");
         
         loader.classList.remove("hidden");
-        loaderText.textContent = "Registrando datos base en la planilla...";
+        loaderText.textContent = "Preparando datos del formulario...";
 
         const linea = document.getElementById("select-linea").value;
         const interno = document.getElementById("select-interno").value;
@@ -497,12 +497,22 @@
         const motivo = document.getElementById("select-motivo").value;
         const fecha = new Date().toLocaleString('es-AR');
 
-        // Paso 1: El texto se sigue guardando por GET/JSONP para evitar problemas de CORS básicos
-        const urlTexto = `${WEB_APP_URL}?action=saveText&fecha=${encodeURIComponent(fecha)}&linea=${encodeURIComponent(linea)}&interno=${encodeURIComponent(interno)}&estado=${encodeURIComponent(estado)}&serial=${encodeURIComponent(serial)}&motivo=${encodeURIComponent(motivo)}`;
-        
         try {
-            const resTexto = await ejecutarPeticionJSONP(urlTexto);
-            if(resTexto.status !== "success") throw new Error("Falla al guardar texto");
+            // Objeto contenedor para agrupar todas las evidencias mapeadas
+            const payload = {
+                action: "submitForm",
+                fecha: fecha,
+                linea: linea,
+                interno: interno,
+                estado: estado,
+                serial: serial,
+                motivo: motivo,
+                fotoFrente: "",
+                fotoSerial: "",
+                fotoChip: "",
+                fotoRegistro: "",
+                fotoCamaras: ""
+            };
 
             const mapasFotos = [
                 { idElemento: 'file-frente', claveApi: 'fotoFrente', nombreVisual: 'Frente' },
@@ -512,47 +522,45 @@
                 { idElemento: 'file-camaras', claveApi: 'fotoCamaras', nombreVisual: 'Cámaras' }
             ];
 
-            // Paso 2: Las fotos se envían por POST nativo para que soporten cualquier peso de imagen
+            // Procesar y convertir las imágenes cargadas antes del envío
             for (const mapa of mapasFotos) {
                 const inputFile = document.getElementById(mapa.idElemento);
                 if (inputFile.files && inputFile.files[0]) {
-                    loaderText.textContent = `Subiendo evidencia de: ${mapa.nombreVisual}...`;
-                    
+                    loaderText.textContent = `Procesando imagen: ${mapa.nombreVisual}...`;
                     const base64Completo = await convertirFileABase64(inputFile.files[0]);
-                    
-                    // Usamos fetch nativo con modo 'no-cors' para mandar el paquete pesado por POST
-                    await fetch(WEB_APP_URL, {
-                        method: "POST",
-                        mode: "no-cors",
-                        headers: {
-                            "Content-Type": "application/x-www-form-urlencoded"
-                        },
-                        body: new URLSearchParams({
-                            "action": "uploadPhoto",
-                            "linea": linea,
-                            "interno": interno,
-                            "tipoFoto": mapa.claveApi,
-                            "fileData": base64Completo
-                        })
-                    });
-                    
-                    // Como el modo 'no-cors' no permite leer la respuesta por seguridad,
-                    // asumimos que se envió correctamente al no disparar un error de red.
+                    payload[mapa.claveApi] = base64Completo;
                 }
             }
 
-            alert("🎉 ¡Inspección completa guardada de forma segura con sus fotos!");
-            document.getElementById("form-inspeccion").reset();
-            limpiarPrevisualizacionesGraficas();
+            loaderText.textContent = "Enviando inspección completa al servidor...";
+
+            // Creación de un formulario nativo oculto para forzar el envío multipart/POST sin bloqueos
+            const formOculto = document.createElement('form');
+            formOculto.method = 'POST';
+            formOculto.action = WEB_APP_URL;
+            formOculto.style.display = 'none';
+
+            // Inyectar el bloque de datos estructurado en un input único
+            const inputData = document.createElement('input');
+            inputData.type = 'hidden';
+            inputData.name = 'formData';
+            inputData.value = JSON.stringify(payload);
+            formOculto.appendChild(inputData);
+
+            document.body.appendChild(formOculto);
             
-            await cargarBaseDatosRemota();
+            // Envío por redirección controlada del formulario (Evita CORS en navegadores estrictos)
+            formOculto.submit();
+
+            // Nota: Al enviarse por formulario nativo el sitio se recargará automáticamente,
+            // garantizando la limpieza de campos y la subida de los archivos sin cortes.
 
         } catch (error) {
             alert("Ocurrió un error crítico durante la carga: " + error.message);
-        } finally {
             loader.classList.add("hidden");
         }
     }
+
 
     function limpiarPrevisualizacionesGraficas() {
         document.querySelectorAll(".preview-img").forEach(img => img.style.display = "none");
