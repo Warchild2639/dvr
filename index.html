@@ -4,62 +4,52 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema Control de Flota - DVR</title>
-    <!-- Tailwind CSS para diseño moderno -->
+    <!-- Cargador estable de Tailwind CSS v3 para evitar bloqueos de diseño -->
     <script src="https://jsdelivr.net"></script>
     <style>
-        /* Animación suave para transiciones entre pantallas */
-        .page-transition {
-            transition: all 0.3s ease-in-out;
-        }
-        /* Ocultar scrollbars sin perder funcionalidad */
+        .page-transition { transition: all 0.3s ease-in-out; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        /* Efecto de carga circular (Spinner) */
         .spinner {
             border: 4px solid rgba(255,255,255,0.3);
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            border-left-color: #ffffff;
+            border-left-color: #6366f1;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased selection:bg-indigo-500 selection:text-white">
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased">
 
-    <!-- PANTALLA DE CARGA GLOBAL INTERNA -->
-    <div id="pantallaCargaGlobal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex flex-col items-center justify-center page-transition">
+    <!-- PANTALLA DE CARGA GLOBAL -->
+    <div id="pantallaCargaGlobal" class="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center z-50 page-transition">
         <div class="spinner mb-4"></div>
         <p class="text-indigo-400 font-medium tracking-wide animate-pulse">Sincronizando Base de Datos...</p>
         <p class="text-xs text-slate-500 mt-1">Conectando con Google Sheets & Drive</p>
     </div>
 
-    <!-- CONTENEDOR PRINCIPAL CENTRALIZADO -->
     <div class="max-w-md mx-auto p-4 pb-24 min-h-screen flex flex-col justify-between relative">
         
-        <!-- ENCABEZADO DE LA APLICACIÓN -->
-        <header class="mb-6 bg-slate-800/50 border border-slate-700/50 rounded-2xl p-4 backdrop-blur-sm shadow-xl">
+        <header class="mb-6 bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-xl">
             <div class="flex items-center justify-between">
                 <div>
-                    <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">Control DVR</h1>
+                    <h1 class="text-xl font-bold tracking-tight text-indigo-400">Control DVR</h1>
                     <p class="text-xs text-slate-400 font-medium mt-0.5">Inspección Técnica de Flotas</p>
                 </div>
                 <div class="bg-indigo-500/10 border border-indigo-500/30 rounded-xl px-3 py-1 text-right">
                     <span class="text-[10px] text-indigo-400 block font-bold uppercase tracking-wider">Servidor</span>
                     <span id="estadoServidor" class="text-xs font-semibold text-emerald-400 flex items-center gap-1 justify-end">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> En Línea
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> En Línea
                     </span>
                 </div>
             </div>
         </header>
-        <!-- CONTENIDO DINÁMICO: PANTALLA 1 (FORMULARIO DE REGISTRO) -->
         <main id="pantallaFormulario" class="space-y-5 page-transition">
             
-            <!-- TARJETA PRINCIPAL: SELECCIÓN DE COLECTIVO -->
-            <section class="bg-slate-800 border border-slate-700/70 rounded-2xl p-5 shadow-xl space-y-4">
-                <div class="flex items-center gap-3 border-b border-slate-700/60 pb-3">
+            <section class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl space-y-4">
+                <div class="flex items-center gap-3 border-b border-slate-700 pb-3">
                     <div class="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
                     </div>
@@ -69,7 +59,7 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div class="space-y-1.5">
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Línea</label>
-                        <select id="selectLinea" onchange="actualizarInternos()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-slate-200 transition">
+                        <select id="selectLinea" onchange="actualizarInternos()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500 text-slate-200">
                             <option value="">Seleccione...</option>
                             <option value="263">Línea 263</option>
                             <option value="293">Línea 293</option>
@@ -78,14 +68,13 @@
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Interno</label>
-                        <select id="selectInterno" onchange="cargarDatosPreviosColectivo()" disabled class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 transition">
+                        <select id="selectInterno" onchange="cargarDatosPreviosColectivo()" disabled class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-40 text-slate-200">
                             <option value="">Seleccione...</option>
                         </select>
                     </div>
                 </div>
 
-                <!-- ALERTA DE ESTADO PREVIO DETECTADO -->
-                <div id="alertaPrevio" class="hidden bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex gap-3 items-start animate-fadeIn">
+                <div id="alertaPrevio" class="hidden bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex gap-3 items-start">
                     <svg class="w-5 h-5 text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                     <div>
                         <h4 class="text-xs font-bold text-amber-300 uppercase tracking-wide">Último Reporte Encontrado</h4>
@@ -93,9 +82,8 @@
                     </div>
                 </div>
             </section>
-            <!-- TARJETA SECUNDARIA: DIAGNÓSTICO OPERATIVO -->
-            <section class="bg-slate-800 border border-slate-700/70 rounded-2xl p-5 shadow-xl space-y-4">
-                <div class="flex items-center gap-3 border-b border-slate-700/60 pb-3">
+            <section class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl space-y-4">
+                <div class="flex items-center gap-3 border-b border-slate-700 pb-3">
                     <div class="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </div>
@@ -105,93 +93,396 @@
                 <div class="space-y-1.5">
                     <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Estado Operativo General</label>
                     <div class="grid grid-cols-3 gap-2">
-                        <button type="button" onclick="seleccionarEstado('FUNCIONA')" id="btnFunciona" class="bg-slate-900 border border-slate-700 py-2.5 rounded-xl text-xs font-bold tracking-wide text-slate-400 hover:bg-slate-700/40 transition focus:outline-none">FUNCIONA</button>
-                        <button type="button" onclick="seleccionarEstado('REVISAR')" id="btnRevisar" class="bg-slate-900 border border-slate-700 py-2.5 rounded-xl text-xs font-bold tracking-wide text-slate-400 hover:bg-slate-700/40 transition focus:outline-none">REVISAR</button>
-                        <button type="button" onclick="seleccionarEstado('ROTO')" id="btnRoto" class="bg-slate-900 border border-slate-700 py-2.5 rounded-xl text-xs font-bold tracking-wide text-slate-400 hover:bg-slate-700/40 transition focus:outline-none">ROTO</button>
+                        <button type="button" onclick="seleccionarEstado('FUNCIONA')" id="btnFunciona" class="bg-slate-900 border border-slate-700 py-2.5 rounded-xl text-xs font-bold text-slate-400 transition focus:outline-none">FUNCIONA</button>
+                        <button type="button" onclick="seleccionarEstado('REVISAR')" id="btnRevisar" class="bg-slate-900 border border-slate-700 py-2.5 rounded-xl text-xs font-bold text-slate-400 transition focus:outline-none">REVISAR</button>
+                        <button type="button" onclick="seleccionarEstado('ROTO')" id="btnRoto" class="bg-slate-900 border border-slate-700 py-2.5 rounded-xl text-xs font-bold text-slate-400 transition focus:outline-none">ROTO</button>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 gap-3 pt-1">
                     <div class="space-y-1.5">
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Número de Serial (Módulo)</label>
-                        <input type="text" id="inputSerial" placeholder="Ingrese el serial del equipo..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-slate-200 placeholder-slate-500 transition">
+                        <input type="text" id="inputSerial" placeholder="Ingrese el serial del equipo..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500 text-slate-200 placeholder-slate-500">
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Motivo / Observaciones del Chequeo</label>
-                        <textarea id="inputMotivo" rows="2" placeholder="Escriba aquí los detalles observados en la unidad..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-slate-200 placeholder-slate-500 transition resize-none"></textarea>
+                        <textarea id="inputMotivo" rows="2" placeholder="Escriba aquí los detalles..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 text-slate-200 placeholder-slate-500 resize-none"></textarea>
                     </div>
                 </div>
             </section>
-            <!-- TARJETA TERCIARIA: PANEL ADJUNTO DE FOTOS MULTIMEDIA (5 OPCIONES) -->
-            <section class="bg-slate-800 border border-slate-700/70 rounded-2xl p-5 shadow-xl space-y-4">
-                <div class="flex items-center gap-3 border-b border-slate-700/60 pb-3">
+            <section class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl space-y-4">
+                <div class="flex items-center gap-3 border-b border-slate-700 pb-3">
                     <div class="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                     </div>
                     <h2 class="font-semibold text-base text-slate-200">Relevamiento Fotográfico (Máx 5)</h2>
                 </div>
 
-                <!-- CONTENEDOR GRID DE SUBIDA DE ARCHIVOS -->
                 <div class="space-y-3">
-                    <!-- FOTO 1: FRENTE -->
-                    <div class="flex items-center justify-between bg-slate-900/60 p-3 rounded-xl border border-slate-700/50">
+                    <div class="flex items-center justify-between bg-slate-900 p-3 rounded-xl border border-slate-700">
                         <div class="flex flex-col">
                             <span class="text-xs font-bold text-slate-300">1. Foto de Frente</span>
                             <span id="txt-fotoFrente" class="text-[10px] text-slate-500 italic mt-0.5">Ningún archivo cargado</span>
                         </div>
-                        <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-400 transition select-none">
+                        <label class="cursor-pointer bg-slate-800 border border-slate-600 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-400">
                             Capturar <input type="file" id="fotoFrente" accept="image/*" capture="environment" onchange="validarEstadoFoto('fotoFrente')" class="hidden">
                         </label>
                     </div>
 
-                    <!-- FOTO 2: SERIAL -->
-                    <div class="flex items-center justify-between bg-slate-900/60 p-3 rounded-xl border border-slate-700/50">
+                    <div class="flex items-center justify-between bg-slate-900 p-3 rounded-xl border border-slate-700">
                         <div class="flex flex-col">
                             <span class="text-xs font-bold text-slate-300">2. Foto del Serial</span>
                             <span id="txt-fotoSerial" class="text-[10px] text-slate-500 italic mt-0.5">Ningún archivo cargado</span>
                         </div>
-                        <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-400 transition select-none">
+                        <label class="cursor-pointer bg-slate-800 border border-slate-600 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-400">
                             Capturar <input type="file" id="fotoSerial" accept="image/*" capture="environment" onchange="validarEstadoFoto('fotoSerial')" class="hidden">
                         </label>
                     </div>
-                    <!-- FOTO 3: CHIP -->
-                    <div class="flex items-center justify-between bg-slate-900/60 p-3 rounded-xl border border-slate-700/50">
+                    <div class="flex items-center justify-between bg-slate-900 p-3 rounded-xl border border-slate-700">
                         <div class="flex flex-col">
                             <span class="text-xs font-bold text-slate-300">3. Foto del Módulo Chip</span>
                             <span id="txt-fotoChip" class="text-[10px] text-slate-500 italic mt-0.5">Ningún archivo cargado</span>
                         </div>
-                        <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-400 transition select-none">
+                        <label class="cursor-pointer bg-slate-800 border border-slate-600 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-400">
                             Capturar <input type="file" id="fotoChip" accept="image/*" capture="environment" onchange="validarEstadoFoto('fotoChip')" class="hidden">
                         </label>
                     </div>
 
-                    <!-- FOTO 4: REGISTRO -->
-                    <div class="flex items-center justify-between bg-slate-900/60 p-3 rounded-xl border border-slate-700/50">
+                    <div class="flex items-center justify-between bg-slate-900 p-3 rounded-xl border border-slate-700">
                         <div class="flex flex-col">
                             <span class="text-xs font-bold text-slate-300">4. Foto del Registro</span>
                             <span id="txt-fotoRegistro" class="text-[10px] text-slate-500 italic mt-0.5">Ningún archivo cargado</span>
                         </div>
-                        <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-400 transition select-none">
+                        <label class="cursor-pointer bg-slate-800 border border-slate-600 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-400">
                             Capturar <input type="file" id="fotoRegistro" accept="image/*" capture="environment" onchange="validarEstadoFoto('fotoRegistro')" class="hidden">
                         </label>
                     </div>
 
-                    <!-- FOTO 5: CAMARAS -->
-                    <div class="flex items-center justify-between bg-slate-900/60 p-3 rounded-xl border border-slate-700/50">
+                    <div class="flex items-center justify-between bg-slate-900 p-3 rounded-xl border border-slate-700">
                         <div class="flex flex-col">
                             <span class="text-xs font-bold text-slate-300">5. Foto de las 4 Cámaras</span>
                             <span id="txt-fotoCamaras" class="text-[10px] text-slate-500 italic mt-0.5">Ningún archivo cargado</span>
                         </div>
-                        <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-400 transition select-none">
+                        <label class="cursor-pointer bg-slate-800 border border-slate-600 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-400">
                             Capturar <input type="file" id="fotoCamaras" accept="image/*" capture="environment" onchange="validarEstadoFoto('fotoCamaras')" class="hidden">
                         </label>
                     </div>
                 </div>
             </section>
 
-            <!-- BOTÓN PRINCIPAL DE DISPARO EJECUTABLE -->
-            <button type="button" onclick="guardarChequeo()" class="w-full bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 active:scale-[0.98] text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 text-sm tracking-wide transition cursor-pointer">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+            <button type="button" onclick="guardarChequeo()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-2xl shadow-lg flex items-center justify-center gap-2 text-sm tracking-wide transition">
                 REGISTRAR INSPECCIÓN COMPLETA
             </button>
         </main>
+        <!-- CONTENIDO DINÁMICO: PANTALLA 2 (VISOR BASE DE DATOS DE LA FLOTA) -->
+        <main id="pantallaFlota" class="hidden space-y-4 page-transition">
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-xl flex items-center justify-between">
+                <div>
+                    <h2 class="font-bold text-base text-slate-200">Estado de Flotas</h2>
+                    <p class="text-[11px] text-slate-400">Resumen y estado del equipamiento DVR</p>
+                </div>
+                <button type="button" onclick="descargarBaseFlotaCompleta(true)" class="p-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl border border-indigo-500/20 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.213 15H16"></path></svg>
+                </button>
+            </div>
+
+            <!-- FILTRO DE LÍNEAS PARA EL VISOR -->
+            <div class="grid grid-cols-3 gap-2">
+                <button type="button" onclick="filtrarVisorLinea('263')" id="tab263" class="bg-indigo-600 text-white py-2 rounded-xl text-xs font-bold border border-indigo-500 shadow-md">L263</button>
+                <button type="button" onclick="filtrarVisorLinea('293')" id="tab293" class="bg-slate-800 text-slate-400 py-2 rounded-xl text-xs font-bold border border-slate-700">L293</button>
+                <button type="button" onclick="filtrarVisorLinea('564')" id="tab564" class="bg-slate-800 text-slate-400 py-2 rounded-xl text-xs font-bold border border-slate-700">L564</button>
+            </div>
+
+            <!-- CONTENEDOR CONTENIENTE DE LAS TARJETAS DE INTERNOS -->
+            <div id="contenedorFlotaGrid" class="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1 no-scrollbar">
+                <!-- Se inyecta dinámicamente mediante JS -->
+            </div>
+        </main>
+
+        <!-- BARRA DE NAVEGACIÓN INFERIOR DE ACCESOS RÁPIDOS -->
+        <nav class="fixed bottom-4 left-4 right-4 max-w-md mx-auto bg-slate-950/80 backdrop-blur-lg border border-slate-800 rounded-2xl px-6 py-3 shadow-2xl flex items-center justify-around z-40">
+            <button type="button" onclick="navegarA('formulario')" id="navForm" class="flex flex-col items-center gap-1 text-indigo-400 transition focus:outline-none">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                <span class="text-[10px] font-bold tracking-wide uppercase">Inspección</span>
+            </button>
+            <button type="button" onclick="navegarA('flota')" id="navFlota" class="flex flex-col items-center gap-1 text-slate-500 hover:text-slate-300 transition focus:outline-none">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <span class="text-[10px] font-bold tracking-wide uppercase">Ver Flota</span>
+            </button>
+        </nav>
+    </div>
+    <!-- SECCIÓN LÓGICA JAVASCRIPT: MOTOR DEL SISTEMA -->
+    <script>
+        // CONFIGURACIÓN DE ENLACE WEB APP GOOGLE APPS SCRIPT
+        const WEB_APP_URL = "https://google.com";
+
+        // Almacenamiento local temporal del espejo de datos de la planilla de cálculo
+        let BASE_DATOS_LOCAL = {};
+        let ESTADO_SELECCIONADO = "";
+        let LINEA_VISOR_ACTUAL = "263";
+
+        // Mapeo estructural estricto de internos asignados por cada terminal de línea
+        const INTERNOS_POR_LINEA = {
+            "263": Array.from({length: 45}, (_, i) => 101 + i), 
+            "293": Array.from({length: 80}, (_, i) => 201 + i), 
+            "564": Array.from({length: 30}, (_, i) => 501 + i)  
+        };
+
+        // DISPARADOR DE ARRANQUE AUTÓNOMO
+        window.addEventListener("DOMContentLoaded", () => {
+            descargarBaseFlotaCompleta(false);
+        });
+
+        // CONTROLADOR DE NAVEGACIÓN ENTRE PANTALLAS
+        function navegarA(destino) {
+            const form = document.getElementById("pantallaFormulario");
+            const flota = document.getElementById("pantallaFlota");
+            const navForm = document.getElementById("navForm");
+            const navFlota = document.getElementById("navFlota");
+
+            if (destino === 'formulario') {
+                form.classList.remove("hidden");
+                flota.classList.add("hidden");
+                navForm.className = "flex flex-col items-center gap-1 text-indigo-400 transition focus:outline-none";
+                navFlota.className = "flex flex-col items-center gap-1 text-slate-500 hover:text-slate-300 transition focus:outline-none";
+            } else {
+                form.classList.add("hidden");
+                flota.classList.remove("hidden");
+                navForm.className = "flex flex-col items-center gap-1 text-slate-500 hover:text-slate-300 transition focus:outline-none";
+                navFlota.className = "flex flex-col items-center gap-1 text-indigo-400 transition focus:outline-none";
+                renderizarVisorFlota();
+            }
+        }
+        // ACTUALIZADOR SELECTOR DE INTERNOS EN BASE A LA LÍNEA
+        function actualizarInternos() {
+            const linea = document.getElementById("selectLinea").value;
+            const selectInt = document.getElementById("selectInterno");
+            
+            selectInt.innerHTML = '<option value="">Seleccione...</option>';
+            document.getElementById("alertaPrevio").classList.add("hidden");
+
+            if (!linea) {
+                selectInt.disabled = true;
+                return;
+            }
+
+            INTERNOS_POR_LINEA[linea].forEach(interno => {
+                const opt = document.createElement("option");
+                opt.value = interno;
+                opt.textContent = `Interno ${interno}`;
+                selectInt.appendChild(opt);
+            });
+            selectInt.disabled = false;
+        }
+
+        // DETECTOR SELECTIVO DE AUDITORÍA PREVIA
+        function cargarDatosPreviosColectivo() {
+            const linea = document.getElementById("selectLinea").value;
+            const interno = document.getElementById("selectInterno").value;
+            const alerta = document.getElementById("alertaPrevio");
+            const textoAlerta = document.getElementById("textoAlertaPrevio");
+
+            if (BASE_DATOS_LOCAL[linea] && BASE_DATOS_LOCAL[linea][interno]) {
+                const data = BASE_DATOS_LOCAL[linea][interno];
+                textoAlerta.innerHTML = `Estado: <span class="font-bold">${data.estado}</span><br>Serial Módulo: ${data.serial || 'No cargado'}<br>Motivo: ${data.motivo || 'Ninguno'}<br><span class="text-[10px] text-slate-400">Fecha: ${data.fecha}</span>`;
+                alerta.classList.remove("hidden");
+            } else {
+                alerta.classList.add("hidden");
+            }
+        }
+
+        // SELECTOR VISUAL DE ESTADO OPERATIVO
+        function seleccionarEstado(estado) {
+            ESTADO_SELECCIONADO = estado;
+            const btnF = document.getElementById("btnFunciona");
+            const btnR = document.getElementById("btnRevisar");
+            const btnRo = document.getElementById("btnRoto");
+
+            // Resetear estilos base
+            [btnF, btnR, btnRo].forEach(b => b.className = "bg-slate-900 border border-slate-700 py-2.5 rounded-xl text-xs font-bold text-slate-400 transition focus:outline-none");
+
+            if (estado === 'FUNCIONA') btnF.className = "bg-emerald-500/20 border border-emerald-500 text-emerald-400 py-2.5 rounded-xl text-xs font-bold transition focus:outline-none shadow-md shadow-emerald-500/10";
+            if (estado === 'REVISAR') btnR.className = "bg-amber-500/20 border border-amber-500 text-amber-400 py-2.5 rounded-xl text-xs font-bold transition focus:outline-none shadow-md shadow-amber-500/10";
+            if (estado === 'ROTO') btnRo.className = "bg-rose-500/20 border border-rose-500 text-rose-400 py-2.5 rounded-xl text-xs font-bold transition focus:outline-none shadow-md shadow-rose-500/10";
+        }
+
+        // VALIDACIÓN VISUAL DE CARGA DE FOTO
+        function validarEstadoFoto(idCampo) {
+            const input = document.getElementById(idCampo);
+            const labelTexto = document.getElementById(`txt-${idCampo}`);
+            if (input.files && input.files.length > 0) {
+                labelTexto.textContent = "✓ Archivo Cargado Listo";
+                labelTexto.className = "text-[10px] text-emerald-400 font-semibold mt-0.5";
+            }
+        }
+        // =========================================================================
+        // MOTOR DE ACCIÓN: LOGICA DE ENVÍO DE DATOS Y ENLACES (MÉTODO POST REFORZADO)
+        // =========================================================================
+        async function guardarChequeo() {
+            const linea = document.getElementById("selectLinea").value;
+            const interno = document.getElementById("selectInterno").value;
+            const serial = document.getElementById("inputSerial").value;
+            const motivo = document.getElementById("inputMotivo").value;
+
+            if (!linea || !interno || !ESTADO_SELECCIONADO) {
+                alert("Por favor, complete Línea, Interno y Estado Operativo Obligatoriamente.");
+                return;
+            }
+
+            // Activar pantalla de bloqueo de procesamiento
+            const loader = document.getElementById("pantallaCargaGlobal");
+            loader.querySelector("p").textContent = "Guardando Datos en Planilla...";
+            loader.classList.remove("hidden");
+
+            const paqueteTexto = {
+                action: 'saveText',
+                fecha: new Date().toLocaleString('es-AR'),
+                linea: linea,
+                interno: interno,
+                estado: ESTADO_SELECCIONADO,
+                serial: serial,
+                motivo: motivo
+            };
+
+            try {
+                // 1. Enviar el paquete de texto vía POST nativo sin límites de URL
+                await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(paqueteTexto)
+                });
+
+                // Mapeo id del input con el identificador del campo en Apps Script
+                const camposFotos = [
+                    { id: 'fotoFrente', tipo: 'fotoFrente' },
+                    { id: 'fotoSerial', tipo: 'fotoSerial' },
+                    { id: 'fotoChip', tipo: 'fotoChip' },
+                    { id: 'fotoRegistro', tipo: 'fotoRegistro' },
+                    { id: 'fotoCamaras', tipo: 'fotoCamaras' }
+                ];
+
+                // 2. Procesamiento secuencial y envío de fotos asociadas vía POST
+                for (let i = 0; i < camposFotos.length; i++) {
+                    const campo = camposFotos[i];
+                    const inputElement = document.getElementById(campo.id);
+                    
+                    if (inputElement.files && inputElement.files[0]) {
+                        loader.querySelector("p").textContent = `Subiendo Imagen (${i + 1}/5)...`;
+                        const archivo = inputElement.files[0];
+                        
+                        // Conversión del archivo local a cadena Base64 legible
+                        const base64Raw = await nuevoProcesadorLectorBase64(archivo);
+                        
+                        const paqueteFoto = {
+                            action: 'uploadPhoto',
+                            linea: linea,
+                            interno: interno,
+                            tipoFoto: campo.tipo,
+                            fileData: encodeURIComponent(base64Raw)
+                        };
+
+                        await fetch(WEB_APP_URL, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(paqueteFoto)
+                        });
+                    }
+                }
+
+                alert("¡Auditoría Completa! Datos y Archivos multimedia sincronizados exitosamente.");
+                location.reload();
+
+            } catch (error) {
+                alert("Error crítico durante el envío.");
+                loader.classList.add("hidden");
+            }
+        }
+
+        // Función Helper para convertir imágenes a Base64 usando Promesas asíncronas
+        function nuevoProcesadorLectorBase64(archivo) {
+            return new Promise((resolver, rechazar) => {
+                const lector = new FileReader();
+                lector.onload = (e) => resolver(e.target.result);
+                lector.onerror = (err) => rechazar(err);
+                lector.readAsDataURL(archivo);
+            });
+        }
+        // DESCARGADOR AUTOMÁTICO DE BASE DE DATOS SPREADSHEET (SOPORTA JSONP PARA LECTURA GET)
+        function descargarBaseFlotaCompleta(forzarAlerta = false) {
+            const loader = document.getElementById("pantallaCargaGlobal");
+            loader.classList.remove("hidden");
+
+            const nombreCallback = "callback_jsonp_" + Date.now();
+            window[nombreCallback] = function(datosRecibidos) {
+                BASE_DATOS_LOCAL = datosRecibidos;
+                
+                // Limpieza del entorno global inyectado
+                document.getElementById(nombreCallback).remove();
+                delete window[nombreCallback];
+
+                loader.classList.add("hidden");
+                if (forzarAlerta) {
+                    renderizarVisorFlota();
+                    alert("Base de datos de Flotas actualizada.");
+                }
+            };
+
+            const script = document.createElement("script");
+            script.id = nombreCallback;
+            script.src = `${WEB_APP_URL}?callback=${nombreCallback}&_t=${Date.now()}`;
+            document.body.appendChild(script);
+        }
+
+        // RENDERIZADOR INTEGRADO DE TARJETAS EN EL VISOR DE FLOTAS
+        function filtrarVisorLinea(linea) {
+            LINEA_VISOR_ACTUAL = linea;
+            ['263', '293', '564'].forEach(l => {
+                const tab = document.getElementById(`tab${l}`);
+                if (l === linea) {
+                    tab.className = "bg-indigo-600 text-white py-2 rounded-xl text-xs font-bold border border-indigo-500 shadow-md";
+                } else {
+                    tab.className = "bg-slate-800 text-slate-400 py-2 rounded-xl text-xs font-bold border border-slate-700";
+                }
+            });
+            renderizarVisorFlota();
+        }
+
+        function renderizarVisorFlota() {
+            const grid = document.getElementById("contenedorFlotaGrid");
+            grid.innerHTML = "";
+            
+            const listaInternos = INTERNOS_POR_LINEA[LINEA_VISOR_ACTUAL];
+
+            listaInternos.forEach(interno => {
+                let estadoStr = "Sin chequear";
+                let colorBg = "bg-slate-800/40 border-slate-700/60 text-slate-500";
+                let detalleAdicional = "";
+
+                if (BASE_DATOS_LOCAL[LINEA_VISOR_ACTUAL] && BASE_DATOS_LOCAL[LINEA_VISOR_ACTUAL][interno]) {
+                    const info = BASE_DATOS_LOCAL[LINEA_VISOR_ACTUAL][interno];
+                    estadoStr = info.estado;
+                    
+                    if (estadoStr === 'FUNCIONA') colorBg = "bg-emerald-500/10 border-emerald-500/30 text-emerald-400";
+                    if (estadoStr === 'REVISAR') colorBg = "bg-amber-500/10 border-amber-500/30 text-amber-400";
+                    if (estadoStr === 'ROTO') colorBg = "bg-rose-500/10 border-rose-500/30 text-rose-400";
+
+                    detalleAdicional = `<p class="text-[10px] text-slate-400 mt-1 truncate">Módulo Serial: ${info.serial || 'N/C'}</p>`;
+                }
+
+                const card = document.createElement("div");
+                card.className = `border p-3.5 rounded-xl flex items-center justify-between transition ${colorBg}`;
+                card.innerHTML = `
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-200">Interno ${interno}</h4>
+                        ${detalleAdicional}
+                    </div>
+                    <span class="text-[10px] font-extrabold tracking-wider uppercase px-2.5 py-1 rounded-lg bg-slate-950/40">${estadoStr}</span>
+                `;
+                grid.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
