@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema Control de Flota - DVR</title>
-    <!-- Cargador estable de Tailwind CSS v3 para evitar bloqueos de diseño -->
-    <script src="https://jsdelivr.net"></script>
+    <!-- Script Oficial Play CDN de Tailwind CSS v3 para renderizado móvil -->
+    <script src="https://tailwindcss.com"></script>
     <style>
         .page-transition { transition: all 0.3s ease-in-out; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .spinner {
-            border: 4px solid rgba(255,255,255,0.3);
+            border: 4px solid rgba(255,255,255,0.1);
             width: 36px;
             height: 36px;
             border-radius: 50%;
@@ -30,6 +30,7 @@
         <p class="text-xs text-slate-500 mt-1">Conectando con Google Sheets & Drive</p>
     </div>
 
+    <!-- CONTENEDOR CENTRAL DE LA APLICACIÓN -->
     <div class="max-w-md mx-auto p-4 pb-24 min-h-screen flex flex-col justify-between relative">
         
         <header class="mb-6 bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-xl">
@@ -41,11 +42,12 @@
                 <div class="bg-indigo-500/10 border border-indigo-500/30 rounded-xl px-3 py-1 text-right">
                     <span class="text-[10px] text-indigo-400 block font-bold uppercase tracking-wider">Servidor</span>
                     <span id="estadoServidor" class="text-xs font-semibold text-emerald-400 flex items-center gap-1 justify-end">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> En Línea
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> En Línea
                     </span>
                 </div>
             </div>
         </header>
+        <!-- FORMULARIO DE REGISTRO -->
         <main id="pantallaFormulario" class="space-y-5 page-transition">
             
             <section class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl space-y-4">
@@ -170,11 +172,11 @@
                 </div>
             </section>
 
-            <button type="button" onclick="guardarChequeo()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-2xl shadow-lg flex items-center justify-center gap-2 text-sm tracking-wide transition">
+            <button type="button" onclick="guardarChequeo()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-2xl shadow-lg flex items-center justify-center gap-2 text-sm tracking-wide transition cursor-pointer">
                 REGISTRAR INSPECCIÓN COMPLETA
             </button>
         </main>
-        <!-- CONTENIDO DINÁMICO: PANTALLA 2 (VISOR BASE DE DATOS DE LA FLOTA) -->
+        <!-- VISOR DE LA FLOTA -->
         <main id="pantallaFlota" class="hidden space-y-4 page-transition">
             <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-xl flex items-center justify-between">
                 <div>
@@ -186,20 +188,16 @@
                 </button>
             </div>
 
-            <!-- FILTRO DE LÍNEAS PARA EL VISOR -->
             <div class="grid grid-cols-3 gap-2">
                 <button type="button" onclick="filtrarVisorLinea('263')" id="tab263" class="bg-indigo-600 text-white py-2 rounded-xl text-xs font-bold border border-indigo-500 shadow-md">L263</button>
                 <button type="button" onclick="filtrarVisorLinea('293')" id="tab293" class="bg-slate-800 text-slate-400 py-2 rounded-xl text-xs font-bold border border-slate-700">L293</button>
                 <button type="button" onclick="filtrarVisorLinea('564')" id="tab564" class="bg-slate-800 text-slate-400 py-2 rounded-xl text-xs font-bold border border-slate-700">L564</button>
             </div>
 
-            <!-- CONTENEDOR CONTENIENTE DE LAS TARJETAS DE INTERNOS -->
-            <div id="contenedorFlotaGrid" class="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1 no-scrollbar">
-                <!-- Se inyecta dinámicamente mediante JS -->
-            </div>
+            <div id="contenedorFlotaGrid" class="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1 no-scrollbar"></div>
         </main>
 
-        <!-- BARRA DE NAVEGACIÓN INFERIOR DE ACCESOS RÁPIDOS -->
+        <!-- NAVEGACIÓN INFERIOR -->
         <nav class="fixed bottom-4 left-4 right-4 max-w-md mx-auto bg-slate-950/80 backdrop-blur-lg border border-slate-800 rounded-2xl px-6 py-3 shadow-2xl flex items-center justify-around z-40">
             <button type="button" onclick="navegarA('formulario')" id="navForm" class="flex flex-col items-center gap-1 text-indigo-400 transition focus:outline-none">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
@@ -211,29 +209,33 @@
             </button>
         </nav>
     </div>
-    <!-- SECCIÓN LÓGICA JAVASCRIPT: MOTOR DEL SISTEMA -->
+    <!-- CONTROLADOR JAVASCRIPT -->
     <script>
-        // CONFIGURACIÓN DE ENLACE WEB APP GOOGLE APPS SCRIPT
         const WEB_APP_URL = "https://google.com";
 
-        // Almacenamiento local temporal del espejo de datos de la planilla de cálculo
         let BASE_DATOS_LOCAL = {};
         let ESTADO_SELECCIONADO = "";
         let LINEA_VISOR_ACTUAL = "263";
 
-        // Mapeo estructural estricto de internos asignados por cada terminal de línea
         const INTERNOS_POR_LINEA = {
             "263": Array.from({length: 45}, (_, i) => 101 + i), 
             "293": Array.from({length: 80}, (_, i) => 201 + i), 
             "564": Array.from({length: 30}, (_, i) => 501 + i)  
         };
 
-        // DISPARADOR DE ARRANQUE AUTÓNOMO
         window.addEventListener("DOMContentLoaded", () => {
             descargarBaseFlotaCompleta(false);
+            
+            // CONTINGENCIA: Si Google Sheets tarda más de 3 segundos, fuerza el desbloqueo
+            setTimeout(() => {
+                const loader = document.getElementById("pantallaCargaGlobal");
+                if (!loader.classList.contains("hidden")) {
+                    loader.classList.add("hidden");
+                    console.warn("La sincronización inicial tardó demasiado. Modo offline preventivo.");
+                }
+            }, 3000);
         });
 
-        // CONTROLADOR DE NAVEGACIÓN ENTRE PANTALLAS
         function navegarA(destino) {
             const form = document.getElementById("pantallaFormulario");
             const flota = document.getElementById("pantallaFlota");
@@ -253,7 +255,6 @@
                 renderizarVisorFlota();
             }
         }
-        // ACTUALIZADOR SELECTOR DE INTERNOS EN BASE A LA LÍNEA
         function actualizarInternos() {
             const linea = document.getElementById("selectLinea").value;
             const selectInt = document.getElementById("selectInterno");
@@ -275,7 +276,6 @@
             selectInt.disabled = false;
         }
 
-        // DETECTOR SELECTIVO DE AUDITORÍA PREVIA
         function cargarDatosPreviosColectivo() {
             const linea = document.getElementById("selectLinea").value;
             const interno = document.getElementById("selectInterno").value;
@@ -291,14 +291,12 @@
             }
         }
 
-        // SELECTOR VISUAL DE ESTADO OPERATIVO
         function seleccionarEstado(estado) {
             ESTADO_SELECCIONADO = estado;
             const btnF = document.getElementById("btnFunciona");
             const btnR = document.getElementById("btnRevisar");
             const btnRo = document.getElementById("btnRoto");
 
-            // Resetear estilos base
             [btnF, btnR, btnRo].forEach(b => b.className = "bg-slate-900 border border-slate-700 py-2.5 rounded-xl text-xs font-bold text-slate-400 transition focus:outline-none");
 
             if (estado === 'FUNCIONA') btnF.className = "bg-emerald-500/20 border border-emerald-500 text-emerald-400 py-2.5 rounded-xl text-xs font-bold transition focus:outline-none shadow-md shadow-emerald-500/10";
@@ -306,7 +304,6 @@
             if (estado === 'ROTO') btnRo.className = "bg-rose-500/20 border border-rose-500 text-rose-400 py-2.5 rounded-xl text-xs font-bold transition focus:outline-none shadow-md shadow-rose-500/10";
         }
 
-        // VALIDACIÓN VISUAL DE CARGA DE FOTO
         function validarEstadoFoto(idCampo) {
             const input = document.getElementById(idCampo);
             const labelTexto = document.getElementById(`txt-${idCampo}`);
@@ -315,9 +312,6 @@
                 labelTexto.className = "text-[10px] text-emerald-400 font-semibold mt-0.5";
             }
         }
-        // =========================================================================
-        // MOTOR DE ACCIÓN: LOGICA DE ENVÍO DE DATOS Y ENLACES (MÉTODO POST REFORZADO)
-        // =========================================================================
         async function guardarChequeo() {
             const linea = document.getElementById("selectLinea").value;
             const interno = document.getElementById("selectInterno").value;
@@ -329,7 +323,6 @@
                 return;
             }
 
-            // Activar pantalla de bloqueo de procesamiento
             const loader = document.getElementById("pantallaCargaGlobal");
             loader.querySelector("p").textContent = "Guardando Datos en Planilla...";
             loader.classList.remove("hidden");
@@ -345,7 +338,6 @@
             };
 
             try {
-                // 1. Enviar el paquete de texto vía POST nativo sin límites de URL
                 await fetch(WEB_APP_URL, {
                     method: 'POST',
                     mode: 'no-cors',
@@ -353,7 +345,6 @@
                     body: JSON.stringify(paqueteTexto)
                 });
 
-                // Mapeo id del input con el identificador del campo en Apps Script
                 const camposFotos = [
                     { id: 'fotoFrente', tipo: 'fotoFrente' },
                     { id: 'fotoSerial', tipo: 'fotoSerial' },
@@ -362,16 +353,13 @@
                     { id: 'fotoCamaras', tipo: 'fotoCamaras' }
                 ];
 
-                // 2. Procesamiento secuencial y envío de fotos asociadas vía POST
                 for (let i = 0; i < camposFotos.length; i++) {
                     const campo = camposFotos[i];
                     const inputElement = document.getElementById(campo.id);
                     
-                    if (inputElement.files && inputElement.files[0]) {
+                    if (inputElement.files && inputElement.files.length > 0) {
                         loader.querySelector("p").textContent = `Subiendo Imagen (${i + 1}/5)...`;
                         const archivo = inputElement.files[0];
-                        
-                        // Conversión del archivo local a cadena Base64 legible
                         const base64Raw = await nuevoProcesadorLectorBase64(archivo);
                         
                         const paqueteFoto = {
@@ -400,7 +388,6 @@
             }
         }
 
-        // Función Helper para convertir imágenes a Base64 usando Promesas asíncronas
         function nuevoProcesadorLectorBase64(archivo) {
             return new Promise((resolver, rechazar) => {
                 const lector = new FileReader();
@@ -409,7 +396,6 @@
                 lector.readAsDataURL(archivo);
             });
         }
-        // DESCARGADOR AUTOMÁTICO DE BASE DE DATOS SPREADSHEET (SOPORTA JSONP PARA LECTURA GET)
         function descargarBaseFlotaCompleta(forzarAlerta = false) {
             const loader = document.getElementById("pantallaCargaGlobal");
             loader.classList.remove("hidden");
@@ -418,8 +404,8 @@
             window[nombreCallback] = function(datosRecibidos) {
                 BASE_DATOS_LOCAL = datosRecibidos;
                 
-                // Limpieza del entorno global inyectado
-                document.getElementById(nombreCallback).remove();
+                const scriptAbuscar = document.getElementById(nombreCallback);
+                if(scriptAbuscar) scriptAbuscar.remove();
                 delete window[nombreCallback];
 
                 loader.classList.add("hidden");
@@ -435,7 +421,6 @@
             document.body.appendChild(script);
         }
 
-        // RENDERIZADOR INTEGRADO DE TARJETAS EN EL VISOR DE FLOTAS
         function filtrarVisorLinea(linea) {
             LINEA_VISOR_ACTUAL = linea;
             ['263', '293', '564'].forEach(l => {
@@ -452,7 +437,6 @@
         function renderizarVisorFlota() {
             const grid = document.getElementById("contenedorFlotaGrid");
             grid.innerHTML = "";
-            
             const listaInternos = INTERNOS_POR_LINEA[LINEA_VISOR_ACTUAL];
 
             listaInternos.forEach(interno => {
